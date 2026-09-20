@@ -200,7 +200,10 @@ export function PurchasesView() {
           autoRestock={autoRestock}
           branchId={branchId}
           currencySymbol={symbol}
-          onCreated={() => refetch()}
+          onCreated={() => {
+            refetch()
+            window.dispatchEvent(new CustomEvent('pos:stock-changed'))
+          }}
         />
       )}
     </div>

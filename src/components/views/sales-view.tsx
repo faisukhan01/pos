@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Search, ReceiptText, Undo2, Loader2, Printer, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -27,8 +27,8 @@ import { useAuthStore } from '@/lib/store'
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { formatMoney, formatDateTime } from '@/lib/format'
 import { paymentLabel, paymentBadgeClass, type SaleDto } from '@/lib/types'
-import { downloadCsv, todayStamp, fetchAllPages } from '@/lib/csv'
 import { cn } from '@/lib/utils'
+import { downloadCsv, todayStamp, fetchAllPages } from '@/lib/csv'
 
 interface SalesResponse {
   items: {
@@ -59,12 +59,36 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   RETURNED: { label: 'Returned', className: 'border-destructive/40 text-destructive' },
 }
 
+const SALES_RANGES = [
+  { key: 'today', label: 'Today', days: 1 },
+  { key: '7d', label: '7 days', days: 7 },
+  { key: '30d', label: '30 days', days: 30 },
+  { key: 'all', label: 'All', days: null },
+] as const
+
+type SalesRangeKey = (typeof SALES_RANGES)[number]['key']
+
+/** Local-midnight ISO string (no offset → parsed as local time server-side). */
+function rangeFrom(key: SalesRangeKey): string | null {
+  const days = SALES_RANGES.find((r) => r.key === key)?.days
+  if (!days) return null
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - (days - 1))
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`
+}
+
 export function SalesView() {
   const { settings } = useAuthStore()
   const symbol = settings?.currencySymbol ?? 'Rs'
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   const [method, setMethod] = useState('all')
+  const [range, setRange] = useState<SalesRangeKey>(() => {
+    const saved = localStorage.getItem('pos-sales-range')
+    return SALES_RANGES.some((r) => r.key === saved) ? (saved as SalesRangeKey) : 'all'
+  })
   const [page, setPage] = useState(1)
   const [detail, setDetail] = useState<SaleDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -83,6 +107,8 @@ export function SalesView() {
           const sp = new URLSearchParams({ page: String(p), pageSize: String(ps) })
           if (debounced) sp.set('q', debounced)
           if (method !== 'all') sp.set('method', method)
+          const from = rangeFrom(range)
+          if (from) sp.set('from', from)
           return `/api/sales?${sp.toString()}`
         },
         (d) => d.items
@@ -118,8 +144,14 @@ export function SalesView() {
     const sp = new URLSearchParams({ page: String(page), pageSize: '15' })
     if (debounced) sp.set('q', debounced)
     if (method !== 'all') sp.set('method', method)
+    const from = rangeFrom(range)
+    if (from) sp.set('from', from)
     return `/api/sales?${sp.toString()}`
-  }, [debounced, method, page])
+  }, [debounced, method, page, range])
+
+  useEffect(() => {
+    localStorage.setItem('pos-sales-range', range)
+  }, [range])
 
   const { data, loading, refetch } = useFetch<SalesResponse>(url)
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1
@@ -194,6 +226,24 @@ export function SalesView() {
             <SelectItem value="MOBILE">Mobile / QR</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5" role="tablist" aria-label="Date range">
+          {SALES_RANGES.map((r) => (
+            <button
+              key={r.key}
+              role="tab"
+              aria-selected={range === r.key}
+              onClick={() => { setRange(r.key); setPage(1) }}
+              className={cn(
+                'h-7 rounded-md px-2.5 text-[12.5px] font-medium transition-all focus-visible:outline-2 focus-visible:outline-ring',
+                range === r.key
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
         {data && (
           <p className="hidden text-xs text-muted-foreground sm:block">
             {data.total} invoice{data.total === 1 ? '' : 's'} · {formatMoney(data.grandTotal, symbol)} total

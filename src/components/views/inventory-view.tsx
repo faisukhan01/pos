@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Search, Boxes, AlertTriangle, PackageX, History, Loader2, PackageCheck, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -123,6 +123,45 @@ export function InventoryView() {
     setAdjustNote('')
   }
 
+  // Bell-initiated adjust: open the adjust dialog for the alerted product.
+  // Flag + custom event, so it fires whether this view is mounting or already open.
+  useEffect(() => {
+    const check = () => {
+      const raw = sessionStorage.getItem('pos-adjust-product')
+      if (!raw) return
+      sessionStorage.removeItem('pos-adjust-product')
+      try {
+        const p = JSON.parse(raw) as { productId: string; name: string; stock: number; minStock: number; unit: string }
+        setFilter('all')
+        setPage(1)
+        setAdjusting({
+          id: p.productId,
+          productId: p.productId,
+          name: p.name,
+          barcode: null,
+          sku: null,
+          unit: p.unit,
+          category: null,
+          stock: p.stock,
+          minStock: p.minStock,
+          purchasePrice: 0,
+          sellingPrice: 0,
+          stockValue: 0,
+        })
+        setNewStock(String(p.stock))
+        setAdjustNote('')
+      } catch {
+        // malformed payload — ignore
+      }
+    }
+    const t = setTimeout(check, 0)
+    window.addEventListener('pos:adjust-intent', check)
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('pos:adjust-intent', check)
+    }
+  }, [])
+
   const submitAdjust = async () => {
     if (!adjusting || !branchId) return
     const val = Number(newStock)
@@ -146,6 +185,7 @@ export function InventoryView() {
       })
       setAdjusting(null)
       refetch()
+      window.dispatchEvent(new CustomEvent('pos:stock-changed'))
     } catch (err) {
       toast.error((err as Error).message)
     } finally {
@@ -299,7 +339,10 @@ export function InventoryView() {
         open={stockTakeOpen}
         onOpenChange={setStockTakeOpen}
         branchId={branchId ?? null}
-        onSubmitted={refetch}
+        onSubmitted={() => {
+          refetch()
+          window.dispatchEvent(new CustomEvent('pos:stock-changed'))
+        }}
       />
 
       {/* Adjust dialog */}

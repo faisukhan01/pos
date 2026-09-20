@@ -375,3 +375,20 @@ Stage Summary:
 - Stock alerts are now actionable in one tap: bell → pre-filled restock PO → save. Contacting customers/suppliers (udhaar recovery, reorders) is one tap via call/WhatsApp/copy.
 - All verified in browser (light + dark + mobile), lint clean, on GitHub after this push.
 - Next-round ideas: Urdu localization, bell row → inline adjust dialog, PDF Z-report, dashboard expenses-vs-sales mini trend, command palette low-stock section.
+
+---
+Task ID: cron-round-2026-09-20-5 (QA + features)
+Agent: Z.ai Code (recurring webDevReview)
+Task: QA sweep, then this round's work: bell row → adjust-stock intent (click an alert to fix it), Sales view quick-range chips (Today/7d/30d/All) with range-aware CSV export, instant bell refresh on stock changes.
+
+Work Log:
+- QA sweep (agent-browser): all 13 views render with ZERO page errors; app HTTP 200; dev.log clean.
+- NEW bell → adjust intent: bell alert rows are now buttons (INVENTORY_MANAGE-gated; non-managers get static rows). Click → sessionStorage 'pos-adjust-product' payload + 'pos:adjust-intent' event + navigate to Inventory → adjust dialog opens pre-filled for that product. Hover affordance: SlidersHorizontal icon fades in on row hover; helper line "Tip: click an item to adjust its stock count." END-TO-END TESTED by actually adjusting: White Sugar 0→12 via bell click → save → success toast. BUG FOUND & FIXED during the test: bell passed the inventory-item id as productId so the adjust API rejected it ("no inventory record") — the /api/inventory rows already carry productId, so the bell payload now uses the real product id; retested to success.
+- NEW instant bell refresh: inventory adjust, stock take (onSubmitted) and purchase save now dispatch 'pos:stock-changed'; the bell listens and reloads immediately (in addition to the 60s poll + refresh-on-open). Verified live: badge dropped 2→1 instantly after adjusting, then to "No stock alerts" after fixing all three; the all-stocked-up empty state renders. Demo alert data restored afterwards (White Sugar→0, Basmati→3, Sunflower→3 → badge back to 3).
+- NEW Sales quick-range: segmented chips Today / 7 days / 30 days / All (same style as dashboard), persisted in localStorage 'pos-sales-range'; uses the existing /api/sales from param with a LOCAL-midnight ISO string (avoids the UTC-midnight = 5 AM PKT trap); payment + search filters compose; Export CSV now respects the range too. Verified: Today → "8 invoices · Rs 20,070 total" (matches dashboard), All → 70 invoices.
+- bun run lint: clean. Zero page errors.
+
+Stage Summary:
+- The stock-alert loop is now fully closed: see alert → click → adjust → badge updates instantly. Sales history is quickly filterable by day/week/month with matching exports.
+- All verified in browser; lint clean; pushed to GitHub.
+- Next-round ideas: Urdu localization, command palette low-stock section, PDF Z-report, dashboard expenses-vs-sales mini trend, customer purchase-history drawer.

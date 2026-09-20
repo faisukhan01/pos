@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   description:
     "A complete point-of-sale and retail management system: scanning, sales, inventory, purchases, expenses and reports for local businesses.",
   keywords: ["POS", "point of sale", "retail", "inventory", "billing"],
+  icons: {
+    icon: [{ url: "/app-icon.png", type: "image/png" }],
+    apple: [{ url: "/app-icon.png" }],
+  },
 };
 
 export const viewport: Viewport = {

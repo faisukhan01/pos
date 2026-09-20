@@ -311,19 +311,3 @@ export function ProductsView() {
   )
 }
 
-// CSV template download helper shared with the import dialog
-export function downloadCsvTemplate() {
-  const rows = [
-    ['name', 'barcode', 'sku', 'category', 'brand', 'unit', 'purchasePrice', 'sellingPrice', 'taxRate', 'openingStock', 'minStock'],
-    ['Chickpeas 1kg', '8964000009999', 'GRO-9999', 'Groceries', '', 'pcs', '310', '395', '0', '40', '5'],
-    ['Green Tea 100g', '8964000009882', 'BEV-9882', 'Beverages', 'Tapal', 'pcs', '280', '349', '0', '25', '5'],
-  ]
-  const csv = rows.map((r) => r.join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'product-import-template.csv'
-  a.click()
-  URL.revokeObjectURL(url)
-}

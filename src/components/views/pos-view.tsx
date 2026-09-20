@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, ScanBarcode, PackageSearch } from 'lucide-react'
+import { Search, ScanBarcode, PackageSearch, PauseCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer'
@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/client-api'
 import { useFetch } from '@/hooks/use-fetch'
-import { useAuthStore, useCartStore } from '@/lib/store'
+import { useAuthStore, useCartStore, useHeldStore } from '@/lib/store'
 import { formatMoney } from '@/lib/format'
 import type { PosProduct, SaleDto } from '@/lib/types'
 import { CartPanel } from '@/components/pos/cart-panel'
@@ -18,6 +18,7 @@ import { ScannerDialog } from '@/components/pos/scanner-dialog'
 import { PaymentDialog } from '@/components/pos/payment-dialog'
 import { ReceiptDialog } from '@/components/pos/receipt-dialog'
 import { ProductNotFoundDialog } from '@/components/pos/product-not-found-dialog'
+import { HeldSalesDialog } from '@/components/pos/held-sales-dialog'
 import type { ViewKey } from '@/components/layout/app-shell'
 
 interface ProductsResponse {
@@ -41,6 +42,7 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const [receiptOpen, setReceiptOpen] = useState(false)
   const [notFoundOpen, setNotFoundOpen] = useState(false)
   const [notFoundCode, setNotFoundCode] = useState<string | null>(null)
+  const [heldOpen, setHeldOpen] = useState(false)
   const [lastSale, setLastSale] = useState<SaleDto | null>(null)
   const [completing, setCompleting] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -157,6 +159,7 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
     return Math.max(0, sub - (s.discount || 0))
   })
   const paymentTotal = cartTotal
+  const heldCount = useHeldStore((s) => s.held.length)
 
   const completePayment = async (method: 'CASH' | 'CARD' | 'MOBILE', amountReceived: number) => {
     if (!branchId) return
@@ -210,6 +213,15 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
               /
             </kbd>
           </div>
+          <Button variant="outline" onClick={() => setHeldOpen(true)} className="h-10 gap-2 relative" aria-label={`Held sales (${heldCount})`}>
+            <PauseCircle className="h-4.5 w-4.5" />
+            <span className="hidden sm:inline">Held</span>
+            {heldCount > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                {heldCount}
+              </span>
+            )}
+          </Button>
           <Button onClick={() => setScannerOpen(true)} className="h-10 gap-2" aria-label="Open camera scanner">
             <ScanBarcode className="h-4.5 w-4.5" />
             <span className="hidden sm:inline">Scan</span>
@@ -287,26 +299,33 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
                       out ? 'opacity-55 cursor-not-allowed' : 'hover:border-primary/45'
                     )}
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2.5">
                       <span
-                        className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-background"
-                        style={{ backgroundColor: p.category?.color ?? '#94a3b8' }}
                         aria-hidden
-                      />
-                      <span
-                        className={cn(
-                          'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
-                          out
-                            ? 'bg-destructive/10 text-destructive'
-                            : p.stock <= 5
-                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                              : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                        )}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[13px] font-bold uppercase"
+                        style={{
+                          backgroundColor: `color-mix(in oklch, ${p.category?.color ?? '#5a6b7a'} 14%, transparent)`,
+                          color: p.category?.color ?? '#5a6b7a',
+                        }}
                       >
-                        {out ? 'Out of stock' : `${p.stock} left`}
+                        {(p.category?.name ?? p.brand ?? p.name).trim().charAt(0)}
                       </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 min-h-[2.4em] text-[13px] font-medium leading-snug">{p.name}</p>
+                        <span
+                          className={cn(
+                            'mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                            out
+                              ? 'bg-destructive/10 text-destructive'
+                              : p.stock <= 5
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                          )}
+                        >
+                          {out ? 'Out of stock' : `${p.stock} left`}
+                        </span>
+                      </div>
                     </div>
-                    <p className="mt-2 line-clamp-2 min-h-[2.4em] text-[13px] font-medium leading-snug">{p.name}</p>
                     <div className="mt-auto flex items-end justify-between pt-2">
                       <span className="font-price text-[15px] font-bold text-primary">
                         {formatMoney(p.sellingPrice, symbol)}
@@ -359,6 +378,7 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
       </div>
 
       {/* Dialogs */}
+      <HeldSalesDialog open={heldOpen} onOpenChange={setHeldOpen} currencySymbol={symbol} />
       <ScannerDialog open={scannerOpen} onOpenChange={setScannerOpen} onDecoded={handleCode} />
       <ProductNotFoundDialog
         open={notFoundOpen}

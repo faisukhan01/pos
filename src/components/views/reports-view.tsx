@@ -15,6 +15,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { ZReportDialog } from '@/components/pos/z-report-dialog'
+import { ReceiptText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFetch } from '@/hooks/use-fetch'
 import { useAuthStore } from '@/lib/store'
@@ -33,6 +36,7 @@ export function ReportsView() {
   const [tab, setTab] = useState<ReportTab>('sales')
   const [from, setFrom] = useState(toInputDate(daysAgo(29)))
   const [to, setTo] = useState(toInputDate(startOfToday()))
+  const [zOpen, setZOpen] = useState(false)
   const branchId = activeBranchId ?? branches[0]?.id
 
   const salesUrl = useMemo(
@@ -99,6 +103,9 @@ export function ReportsView() {
         </Tabs>
         {tab !== 'inventory' && (
           <div className="flex items-center gap-2 lg:ml-auto">
+            <Button variant="outline" onClick={() => setZOpen(true)} className="gap-2">
+              <ReceiptText className="h-4 w-4" /> End-of-day
+            </Button>
             <input
               type="date"
               value={from}
@@ -119,6 +126,9 @@ export function ReportsView() {
           </div>
         )}
       </div>
+
+      {/* End-of-day printable summary */}
+      <ZReportDialog open={zOpen} onOpenChange={setZOpen} />
 
       {loading && (
         <div className="grid gap-3 md:grid-cols-3">

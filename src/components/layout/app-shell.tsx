@@ -14,6 +14,7 @@ import {
   ChartColumn,
   Settings as SettingsIcon,
   Store as StoreIcon,
+  UsersRound,
   LogOut,
   Menu,
   Moon,
@@ -48,6 +49,7 @@ import { CustomersView } from '@/components/views/customers-view'
 import { SuppliersView } from '@/components/views/suppliers-view'
 import { ExpensesView } from '@/components/views/expenses-view'
 import { ReportsView } from '@/components/views/reports-view'
+import { StaffView } from '@/components/views/staff-view'
 import { SettingsView } from '@/components/views/settings-view'
 
 export type ViewKey =
@@ -61,6 +63,7 @@ export type ViewKey =
   | 'suppliers'
   | 'expenses'
   | 'reports'
+  | 'staff'
   | 'settings'
 
 interface NavItem {
@@ -98,7 +101,10 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
   },
   {
     title: 'System',
-    items: [{ key: 'settings', label: 'Settings', icon: SettingsIcon, permission: PERMISSIONS.PRODUCTS_VIEW }],
+    items: [
+      { key: 'staff', label: 'Staff & Roles', icon: UsersRound, permission: PERMISSIONS.USERS_MANAGE },
+      { key: 'settings', label: 'Settings', icon: SettingsIcon, permission: PERMISSIONS.PRODUCTS_VIEW },
+    ],
   },
 ]
 
@@ -113,6 +119,7 @@ const VIEW_TITLES: Record<ViewKey, { title: string; subtitle: string }> = {
   suppliers: { title: 'Suppliers', subtitle: 'Who supplies your shelves' },
   expenses: { title: 'Expenses', subtitle: 'Money going out' },
   reports: { title: 'Reports', subtitle: 'Numbers that help you decide' },
+  staff: { title: 'Staff & Roles', subtitle: 'Accounts, permissions and access' },
   settings: { title: 'Settings', subtitle: 'Business profile and preferences' },
 }
 
@@ -333,6 +340,7 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
             {view === 'suppliers' && <SuppliersView />}
             {view === 'expenses' && <ExpensesView />}
             {view === 'reports' && <ReportsView />}
+            {view === 'staff' && <StaffView />}
             {view === 'settings' && <SettingsView />}
           </main>
 

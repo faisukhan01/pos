@@ -22,6 +22,9 @@ import {
   PackageX,
   ArrowUpRight,
   Wallet,
+  ScanBarcode,
+  Plus,
+  ChartColumn,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -95,6 +98,22 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
               />
             </>
           )}
+      </div>
+
+      {/* Quick actions */}
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" className="gap-2" onClick={() => onNavigate('pos')}>
+          <ScanBarcode className="h-4 w-4" /> New sale
+        </Button>
+        <Button size="sm" variant="outline" className="gap-2" onClick={() => onNavigate('products')}>
+          <Plus className="h-4 w-4" /> Add product
+        </Button>
+        <Button size="sm" variant="outline" className="gap-2" onClick={() => onNavigate('expenses')}>
+          <Wallet className="h-4 w-4" /> Record expense
+        </Button>
+        <Button size="sm" variant="outline" className="gap-2" onClick={() => onNavigate('reports')}>
+          <ChartColumn className="h-4 w-4" /> Reports
+        </Button>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">

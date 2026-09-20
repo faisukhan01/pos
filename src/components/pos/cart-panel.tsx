@@ -1,11 +1,12 @@
 'use client'
 
-import { Minus, Plus, Trash2, UserRound, ShoppingBasket, X } from 'lucide-react'
+import { Minus, Plus, Trash2, UserRound, ShoppingBasket, X, PauseCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { cartTotals, useCartStore } from '@/lib/store'
+import { cartTotals, useCartStore, useHeldStore } from '@/lib/store'
+import { toast } from 'sonner'
 import { formatMoney } from '@/lib/format'
 import { useFetch } from '@/hooks/use-fetch'
 import type { CustomerDto } from '@/lib/types'
@@ -18,8 +19,17 @@ interface CartPanelProps {
 
 export function CartPanel({ currencySymbol, onCharge, busy }: CartPanelProps) {
   const { lines, customerId, customerName, discount, add, setQty, remove, setCustomer, setDiscount, clear } = useCartStore()
+  const hold = useHeldStore((s) => s.hold)
   const { data: customersData } = useFetch<{ items: CustomerDto[] }>('/api/customers?pageSize=100')
   const totals = cartTotals(lines, discount)
+
+  const holdCurrent = () => {
+    const label = customerName !== 'Walk-in Customer' ? customerName : `${totals.itemCount} item${totals.itemCount === 1 ? '' : 's'} · ${formatMoney(totals.total, currencySymbol)}`
+    const snapshot = hold(label)
+    if (snapshot) {
+      toast.success('Sale put on hold', { description: `${label} — recall it any time from Held.` })
+    }
+  }
 
   return (
     <div className="flex h-full flex-col rounded-2xl border bg-card shadow-sm" aria-label="Shopping cart">
@@ -33,9 +43,20 @@ export function CartPanel({ currencySymbol, onCharge, busy }: CartPanelProps) {
           </span>
         </div>
         {lines.length > 0 && (
-          <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={clear}>
-            <X className="h-3.5 w-3.5" /> Clear
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={holdCurrent}
+              aria-label="Hold current sale"
+            >
+              <PauseCircle className="h-3.5 w-3.5" /> Hold
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={clear} aria-label="Clear cart">
+              <X className="h-3.5 w-3.5" /> Clear
+            </Button>
+          </div>
         )}
       </div>
 

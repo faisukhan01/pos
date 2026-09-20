@@ -48,3 +48,55 @@ Stage Summary:
 - GitHub: repo pushed and up to date.
 - Next phases (for the recurring reviewer): Urdu localization, offline sale
   queue, restaurant/hotel modules, SaaS super-admin panel, PDF receipt export.
+
+---
+Task ID: 2
+Agent: Z.ai Code (recurring webDevReview — round 2)
+Task: Assess status, QA via agent-browser, add features + styling polish, push to GitHub.
+
+Work Log (status assessment first):
+- App healthy (HTTP 200), lint clean, no browser page errors; reworded an unpushed
+  auto-commit message for clarity before pushing.
+- Reviewed all views in browser as Owner: stable.
+
+New features built this round:
+1. Staff & Roles management (fills spec's "User Management with role-based access" gap)
+   - API: GET/POST /api/users, GET/PATCH/DELETE /api/users/[id] with
+     USERS_MANAGE permission; protections: cannot remove/deactivate self,
+     cannot demote/deactivate the last active Owner/Admin, password reset
+     supported (scrypt), email uniqueness.
+   - UI: new "Staff & Roles" view (System section): staff table with role
+     badges, per-role permission counts, active toggles, create/edit dialog
+     with role + branch + password reset, remove with confirmation.
+   - Verified: created Ayesha Siddiqui (cashier) via UI; her account signs in;
+     cashier nav hides Staff/Purchases/Reports/Suppliers/Expenses; API 403 for
+     cashier on /api/users.
+2. Held (parked) sales in POS
+   - Persisted zustand store (device-local, max 20); "Hold" button on cart,
+     "Held (N)" badge button in POS toolbar, dialog with recall (with
+     replace-cart confirmation when cart non-empty) and discard.
+   - Verified: hold 2-item Rs 800 cart -> cleared; recall -> cart restored.
+3. End-of-day (Z-report) printable summary
+   - Reports toolbar "End-of-day" button opens dialog with business date
+     picker; renders receipt-style report: transactions, gross/discounts/net,
+     payment breakdown, cash drawer (cash sales - cash expenses = cash
+     expected), expenses list, per-cashier totals; uses the same 80mm print
+     CSS as receipts; honest note that opening float isn't tracked yet.
+   - Verified with real data (10 txns, Rs 21,650, cash expected Rs 12,290).
+
+Styling polish this round:
+- Generated brand app icon (public/app-icon.png) and wired as favicon/apple icon.
+- POS product cards: replaced plain dots with colored letter tiles
+  (category-colored, color-mix backgrounds) — richer shelf look.
+- Dashboard: quick-actions row (New sale / Add product / Record expense / Reports).
+- Cleanup: removed superseded client-side CSV template helper.
+
+Verification:
+- bun run lint: clean. agent-browser: staff create/login/permissions, hold/
+  recall, Z-report all verified; no page errors; products view intact.
+
+Unresolved / risks / next priorities:
+- Urdu localization still open (roadmap item).
+- Physical opening float / shift model for exact cash reconciliation.
+- Offline sale queue (idempotency keys ready).
+- Branch creation UI exists via API only — could add a small dialog in Settings.

@@ -34,6 +34,7 @@ import { useAuthStore } from '@/lib/store'
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { formatMoney } from '@/lib/format'
 import type { PosProduct } from '@/lib/types'
+import { downloadCsv, todayStamp, fetchAllPages } from '@/lib/csv'
 import { ProductFormDialog } from '@/components/pos/product-form-dialog'
 import { ImportDialog } from '@/components/pos/import-dialog'
 import { LabelPrintDialog } from '@/components/pos/label-print-dialog'
@@ -61,6 +62,7 @@ export function ProductsView() {
   const [labelPreselect, setLabelPreselect] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<PosProduct | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const canManage = !!user && hasPermission(user.role, PERMISSIONS.PRODUCTS_MANAGE)
   const branchId = activeBranchId ?? branches[0]?.id
@@ -93,6 +95,50 @@ export function ProductsView() {
   const { data: categories } = useFetch<{ id: string; name: string; color: string; productCount: number }[]>('/api/categories')
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1
+
+  const exportCsv = async () => {
+    setExporting(true)
+    try {
+      const pages = await fetchAllPages<ProductsResponse>(
+        (p, ps) => {
+          const sp = new URLSearchParams({ page: String(p), pageSize: String(ps) })
+          if (debounced) sp.set('q', debounced)
+          if (categoryId !== 'all') sp.set('categoryId', categoryId)
+          if (branchId) sp.set('branchId', branchId)
+          return `/api/products?${sp.toString()}`
+        },
+        (d) => d.items
+      )
+      const rows = pages.flatMap((d) => d.items)
+      if (!rows.length) {
+        toast.info('Nothing to export with the current filters.')
+        return
+      }
+      downloadCsv(
+        `products-${todayStamp()}.csv`,
+        ['Name', 'Barcode', 'SKU', 'Category', 'Brand', 'Unit', 'Cost', 'Price', 'Tax %', 'Stock', 'Min stock', 'Active'],
+        rows.map((p) => [
+          p.name,
+          p.barcode ?? '',
+          p.sku ?? '',
+          p.category?.name ?? '',
+          p.brand ?? '',
+          p.unit,
+          p.purchasePrice,
+          p.sellingPrice,
+          p.taxRate,
+          p.stock,
+          p.minStock,
+          p.active ? 'yes' : 'no',
+        ])
+      )
+      toast.success('Products exported', { description: `${rows.length} products saved as CSV.` })
+    } catch (err) {
+      toast.error('Export failed', { description: (err as Error).message })
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const openCreate = useCallback(() => {
     setEditing(null)
@@ -151,6 +197,9 @@ export function ProductsView() {
         </Select>
         {canManage && (
           <div className="flex flex-wrap gap-2 sm:ml-auto">
+            <Button variant="outline" onClick={exportCsv} disabled={exporting} aria-label="Export products as CSV">
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Export
+            </Button>
             <Button variant="outline" onClick={() => { setLabelPreselect(null); setLabelOpen(true) }}>
               <Tags className="h-4 w-4" /> Labels
             </Button>

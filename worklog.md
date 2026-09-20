@@ -302,3 +302,22 @@ Work Log:
 Stage Summary:
 - Nova POS redesign is LIVE, verified, lint-clean, and on GitHub.
 - Next rounds (cron): keep polishing details, add features (e.g., Urdu localization, PDF receipts, shift improvements), push after each round.
+
+---
+Task ID: cron-round-2026-09-20 (QA + features)
+Agent: Z.ai Code (recurring webDevReview)
+Task: QA sweep, then this round's work: CSV exports, one-click restock PO, KPI count-up, login polish.
+
+Work Log:
+- QA sweep (agent-browser, JS clicks): login → shell; Sales (15 rows), Products (15), Inventory (20), Purchases (2), Reports, Expenses (7), Suppliers (3) all render; zero page errors; app HTTP 200.
+- NEW src/lib/csv.ts: downloadCsv (BOM + escaping), todayStamp, fetchAllPages (loops pageSize=100 list APIs).
+- Sales view: "Export CSV" button — exports ALL invoices matching current filters (paged), columns Invoice/Date/Customer/Cashier/Payment/Items/Total/Status. Verified: toast "70 invoices saved as CSV".
+- Products view: "Export" button — same pattern, columns incl. Barcode/SKU/Category/Cost/Price/Stock/MinStock/Active. Button verified in browser.
+- Purchases view (Record purchase dialog): "Low stock (N)" amber button + hint line — prefills PO lines for every product at/below minStock with suggested qty = max(2×minStock − stock, minStock) at purchase price. Verified: 3 items prefilled (White Sugar ×12, Oil ×9, Basmati ×9, total Rs 52,080); dialog cancelled without saving.
+- NEW src/hooks/use-count-up.ts + dashboard KPIs animate (600ms ease-out, prefers-reduced-motion safe). Verified final values land exactly (Rs 20,070 / 2,508.75 / 112,060 / 3).
+- Login demo chips: role icons (ShieldCheck/ClipboardList/ScanBarcode) above labels — nicer affordance.
+- bun run lint: clean.
+
+Stage Summary:
+- Round delivered 2 data-portability features + restock assist + motion polish; all browser-verified, zero errors, lint clean.
+- Next-round ideas: Urdu localization, reports CSV/PDF, sidebar collapse, global Ctrl+K search, expense category chips polish.

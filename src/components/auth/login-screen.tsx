@@ -1,16 +1,16 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { Loader2, ArrowRight, WifiOff, Zap } from 'lucide-react'
+import { Loader2, ArrowRight, WifiOff, Zap, ShieldCheck, ClipboardList, ScanBarcode } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { api } from '@/lib/client-api'
 
 const DEMO_ACCOUNTS = [
-  { email: 'owner@pos.local', password: 'owner123', label: 'Owner' },
-  { email: 'manager@pos.local', password: 'manager123', label: 'Manager' },
-  { email: 'cashier@pos.local', password: 'cashier123', label: 'Cashier' },
+  { email: 'owner@pos.local', password: 'owner123', label: 'Owner', icon: ShieldCheck },
+  { email: 'manager@pos.local', password: 'manager123', label: 'Manager', icon: ClipboardList },
+  { email: 'cashier@pos.local', password: 'cashier123', label: 'Cashier', icon: ScanBarcode },
 ]
 
 export function LoginScreen({ onSuccess, serverDown }: { onSuccess: () => void; serverDown?: boolean }) {
@@ -127,17 +127,21 @@ export function LoginScreen({ onSuccess, serverDown }: { onSuccess: () => void; 
             Quick demo sign-in
           </p>
           <div className="grid grid-cols-3 gap-2">
-            {DEMO_ACCOUNTS.map((acc) => (
-              <button
-                key={acc.email}
-                type="button"
-                onClick={() => submit(undefined, { email: acc.email, password: acc.password })}
-                disabled={busy}
-                className="rounded-lg border bg-background px-2 py-2 text-[13px] font-medium text-foreground/80 transition-all hover:border-primary/50 hover:bg-accent hover:text-accent-foreground disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-ring"
-              >
-                {acc.label}
-              </button>
-            ))}
+            {DEMO_ACCOUNTS.map((acc) => {
+              const Icon = acc.icon
+              return (
+                <button
+                  key={acc.email}
+                  type="button"
+                  onClick={() => submit(undefined, { email: acc.email, password: acc.password })}
+                  disabled={busy}
+                  className="flex flex-col items-center gap-1 rounded-lg border bg-background px-2 py-2.5 text-[13px] font-medium text-foreground/80 transition-all hover:border-primary/50 hover:bg-accent hover:text-accent-foreground disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  <Icon className="h-4 w-4 text-primary/70" />
+                  {acc.label}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>

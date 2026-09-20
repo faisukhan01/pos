@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, ReceiptText, Undo2, Loader2, Printer } from 'lucide-react'
+import { Search, ReceiptText, Undo2, Loader2, Printer, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -27,6 +27,7 @@ import { useAuthStore } from '@/lib/store'
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { formatMoney, formatDateTime } from '@/lib/format'
 import { paymentLabel, paymentBadgeClass, type SaleDto } from '@/lib/types'
+import { downloadCsv, todayStamp, fetchAllPages } from '@/lib/csv'
 import { cn } from '@/lib/utils'
 
 interface SalesResponse {
@@ -72,6 +73,46 @@ export function SalesView() {
   const [returnReason, setReturnReason] = useState('')
   const [returnBusy, setReturnBusy] = useState(false)
   const [receiptMode, setReceiptMode] = useState(false)
+  const [exporting, setExporting] = useState(false)
+
+  const exportCsv = async () => {
+    setExporting(true)
+    try {
+      const pages = await fetchAllPages<SalesResponse>(
+        (p, ps) => {
+          const sp = new URLSearchParams({ page: String(p), pageSize: String(ps) })
+          if (debounced) sp.set('q', debounced)
+          if (method !== 'all') sp.set('method', method)
+          return `/api/sales?${sp.toString()}`
+        },
+        (d) => d.items
+      )
+      const rows = pages.flatMap((d) => d.items)
+      if (!rows.length) {
+        toast.info('Nothing to export with the current filters.')
+        return
+      }
+      downloadCsv(
+        `sales-${todayStamp()}.csv`,
+        ['Invoice', 'Date', 'Customer', 'Cashier', 'Payment', 'Items', 'Total', 'Status'],
+        rows.map((s) => [
+          s.invoiceNo,
+          formatDateTime(s.createdAt),
+          s.customerName,
+          s.cashierName,
+          paymentLabel(s.paymentMethod),
+          s.itemCount,
+          s.total,
+          STATUS_LABELS[s.status]?.label ?? s.status,
+        ])
+      )
+      toast.success('Sales exported', { description: `${rows.length} invoices saved as CSV.` })
+    } catch (err) {
+      toast.error('Export failed', { description: (err as Error).message })
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const url = useMemo(() => {
     const sp = new URLSearchParams({ page: String(page), pageSize: '15' })
@@ -154,10 +195,21 @@ export function SalesView() {
           </SelectContent>
         </Select>
         {data && (
-          <p className="hidden text-xs text-muted-foreground sm:block sm:ml-auto">
+          <p className="hidden text-xs text-muted-foreground sm:block">
             {data.total} invoice{data.total === 1 ? '' : 's'} · {formatMoney(data.grandTotal, symbol)} total
           </p>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto gap-2 sm:ml-2"
+          onClick={exportCsv}
+          disabled={exporting}
+          aria-label="Export sales as CSV"
+        >
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Export CSV
+        </Button>
       </div>
 
       {/* List */}

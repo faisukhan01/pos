@@ -34,6 +34,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useFetch } from '@/hooks/use-fetch'
+import { useCountUp } from '@/hooks/use-count-up'
 import { useAuthStore } from '@/lib/store'
 import { formatMoney, formatTime, timeAgo, formatNumber } from '@/lib/format'
 import { paymentLabel, type DashboardData, type ShiftsSummary } from '@/lib/types'
@@ -54,6 +55,13 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
   const activeShift = shiftData?.active ?? null
 
   const salesChart = useMemo(() => data?.salesSeries ?? [], [data])
+
+  // KPI count-up — animates from 0 (or previous value) whenever data lands/refreshes.
+  const todaySalesNum = useCountUp(data?.todaySales ?? 0)
+  const avgSaleNum = useCountUp(data?.avgSale ?? 0)
+  const weekSalesNum = useCountUp(data?.weekSales ?? 0)
+  const stockAlertsNum = useCountUp((data?.lowStockCount ?? 0) + (data?.outOfStockCount ?? 0))
+  const stockAlertsValue = (data?.lowStockCount ?? 0) + (data?.outOfStockCount ?? 0)
 
   if (error) {
     return (
@@ -76,30 +84,30 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
               <StatCard
                 icon={Banknote}
                 label="Sales today"
-                value={formatMoney(data?.todaySales ?? 0, symbol)}
+                value={formatMoney(Math.round(todaySalesNum), symbol)}
                 hint={`${formatNumber(data?.todayTransactions ?? 0)} transactions`}
                 tone="primary"
               />
               <StatCard
                 icon={ReceiptText}
                 label="Average sale"
-                value={formatMoney(data?.avgSale ?? 0, symbol)}
+                value={formatMoney(avgSaleNum, symbol)}
                 hint="per transaction today"
               />
               <StatCard
                 icon={TrendingUp}
                 label="Last 7 days"
-                value={formatMoney(data?.weekSales ?? 0, symbol)}
+                value={formatMoney(Math.round(weekSalesNum), symbol)}
                 hint="gross sales"
               />
               <StatCard
                 icon={(data?.outOfStockCount ?? 0) > 0 ? PackageX : Package}
                 label="Stock alerts"
-                value={`${(data?.lowStockCount ?? 0) + (data?.outOfStockCount ?? 0)}`}
+                value={`${Math.round(stockAlertsNum)}`}
                 hint={`${data?.lowStockCount ?? 0} low · ${data?.outOfStockCount ?? 0} out of stock`}
-                tone={(data?.lowStockCount ?? 0) + (data?.outOfStockCount ?? 0) > 0 ? 'warn' : 'default'}
+                tone={stockAlertsValue > 0 ? 'warn' : 'default'}
                 action={
-                  (data?.lowStockCount ?? 0) + (data?.outOfStockCount ?? 0) > 0
+                  stockAlertsValue > 0
                     ? { label: 'Review', onClick: () => onNavigate('inventory') }
                     : undefined
                 }

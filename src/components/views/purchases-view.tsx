@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, Plus, Loader2, ShoppingCart, Trash2, Truck } from 'lucide-react'
+import { Search, Plus, Loader2, ShoppingCart, Trash2, Truck, PackagePlus, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -208,6 +208,27 @@ function CreatePurchaseDialog({
 
   const total = lines.reduce((s, l) => s + Number(l.cost || 0) * Number(l.quantity || 0), 0)
 
+  // One-click restock: every product at or below its minimum for this branch.
+  const lowStockItems = (products?.items ?? []).filter((p) => p.stock <= p.minStock)
+  const lowMissing = lowStockItems.filter((p) => !lines.some((l) => l.productId === p.id))
+  const suggestedQty = (p: PosProduct) => Math.max(p.minStock * 2 - p.stock, p.minStock)
+
+  const addLowStockLines = () => {
+    if (!lowMissing.length) return
+    setLines((ls) => [
+      ...ls,
+      ...lowMissing.map((p) => ({
+        productId: p.id,
+        name: p.name,
+        cost: String(p.purchasePrice || ''),
+        quantity: String(suggestedQty(p)),
+      })),
+    ])
+    toast.success(`${lowMissing.length} low-stock item${lowMissing.length === 1 ? '' : 's'} added`, {
+      description: 'Quantities are suggested to reach twice the minimum level — adjust before saving.',
+    })
+  }
+
   const addLine = () => {
     if (!picker) return
     const p = products?.items.find((x) => x.id === picker)
@@ -288,7 +309,23 @@ function CreatePurchaseDialog({
                 </SelectContent>
               </Select>
               <Button variant="outline" onClick={addLine} disabled={!picker}><Plus className="h-4 w-4" /> Add</Button>
+              {lowMissing.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={addLowStockLines}
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-300 dark:hover:bg-amber-950/40"
+                  aria-label="Add all low-stock items to this purchase"
+                >
+                  <PackagePlus className="h-4 w-4" /> Low stock ({lowMissing.length})
+                </Button>
+              )}
             </div>
+            {lowStockItems.length > 0 && (
+              <p className="flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300">
+                <TriangleAlert className="h-3 w-3 shrink-0" />
+                {lowStockItems.length} product{lowStockItems.length === 1 ? ' is' : 's are'} at or below minimum stock — suggested quantity tops back up to 2× minimum.
+              </p>
+            )}
 
             {lines.length === 0 ? (
               <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed py-8 text-center">

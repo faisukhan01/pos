@@ -321,3 +321,20 @@ Work Log:
 Stage Summary:
 - Round delivered 2 data-portability features + restock assist + motion polish; all browser-verified, zero errors, lint clean.
 - Next-round ideas: Urdu localization, reports CSV/PDF, sidebar collapse, global Ctrl+K search, expense category chips polish.
+
+---
+Task ID: cron-round-2026-09-20-2 (QA + features)
+Agent: Z.ai Code (recurring webDevReview)
+Task: QA sweep of all views, then this round's work: global Ctrl+K command palette, collapsible sidebar, Reports CSV export, rank-chip polish.
+
+Work Log:
+- QA sweep (agent-browser, JS clicks): all 12 views (Register, Dashboard, Sales, Cash Drawer, Products, Inventory, Purchases, Customers, Suppliers, Expenses, Reports, Staff, Settings) render with ZERO page errors; app HTTP 200; dev.log clean.
+- NEW src/components/layout/command-palette.tsx: CommandDialog-based palette. Sections mirror sidebar (permission-filtered), plus Actions group (toggle theme, sign out). Opens via Ctrl/Cmd+K or the header "Search… Ctrl K" chip (icon button on mobile). Selection closes palette then navigates (50ms defer so focus returns first). Verified: Ctrl+K opens, typing+click navigated to Dashboard.
+- Sidebar collapse (app-shell.tsx): collapsed state persists in localStorage 'pos-sidebar-collapsed'; Ctrl/Cmd+B toggles; header PanelLeftClose/PanelLeftOpen button (lg+ only). Collapsed = 64px icon rail: brand icon only, icon-only nav with right-side Tooltips, avatar-only user card (dropdown intact). Width transition 200ms ease-out. Verified: collapse → reload keeps state → expand works.
+- Reports CSV export (reports-view.tsx): Export CSV button in the controls row (all 5 tabs) exports the on-screen report: sales→daily rows, products→best sellers, inventory→full stock valuation, expenses→itemized, purchases→POs. Toast confirms; "Nothing to export yet" guard while loading. Verified: "Sales report saved as CSV" toast.
+- Styling details: SimpleList rank chips — #1 solid violet, #2-3 violet-tinted, rest muted; row hover ring (border-primary/30 + bg-primary/[0.03]). Shortcuts dialog now lists Ctrl+K and Ctrl+B.
+- bun run lint: clean. Pushed df832ed to github.com/faisukhan01/pos main as faisukhan01.
+
+Stage Summary:
+- Round delivered 3 power-user features (palette, collapse, report exports) + visual polish; all browser-verified with zero page errors, lint clean, on GitHub.
+- Next-round ideas: Urdu localization, PDF/Z-report print improvements, low-stock alerts in palette, sidebar per-section dividers in collapsed mode, dashboard quick-range chips (Today/7d/30d).

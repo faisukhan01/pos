@@ -63,3 +63,4 @@ server.log
 examples/
 mini-services/
 *.pid
+tool-results/

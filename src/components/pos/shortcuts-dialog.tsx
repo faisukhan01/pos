@@ -44,14 +44,14 @@ export function ShortcutsDialog({
           {SHORTCUTS.map((s) => (
             <li
               key={s.label}
-              className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2"
             >
               <span className="text-[13px]">{s.label}</span>
               <span className="flex shrink-0 gap-1">
                 {s.keys.map((k) => (
                   <kbd
                     key={k}
-                    className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+                    className="rounded-md border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
                   >
                     {k}
                   </kbd>

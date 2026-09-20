@@ -124,8 +124,8 @@ export function ProductsView() {
   return (
     <div className="p-4 sm:p-6 space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-xs sm:w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
@@ -150,7 +150,7 @@ export function ProductsView() {
           </SelectContent>
         </Select>
         {canManage && (
-          <div className="flex gap-2 sm:ml-auto">
+          <div className="flex flex-wrap gap-2 sm:ml-auto">
             <Button variant="outline" onClick={() => { setLabelPreselect(null); setLabelOpen(true) }}>
               <Tags className="h-4 w-4" /> Labels
             </Button>
@@ -193,7 +193,7 @@ export function ProductsView() {
             <>
               <div className="overflow-x-auto scrollbar-thin">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="[&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                     <TableRow>
                       <TableHead>Product</TableHead>
                       <TableHead className="hidden md:table-cell">Barcode</TableHead>

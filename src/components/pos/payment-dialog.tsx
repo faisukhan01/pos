@@ -101,9 +101,14 @@ export function PaymentDialog({
         <DialogHeader>
           <DialogTitle>Take payment</DialogTitle>
           <DialogDescription id="payment-desc">
-            Collect <span className="font-price font-semibold text-foreground">{formatMoney(total, currencySymbol)}</span> from the customer.
+            Choose a payment method to complete the sale.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex items-end justify-between rounded-xl bg-muted/50 px-4 py-3">
+          <span className="text-[13px] text-muted-foreground">Amount due</span>
+          <span className="font-price text-2xl font-bold tracking-tight">{formatMoney(total, currencySymbol)}</span>
+        </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label="Payment method">
           {PAYMENT_METHODS.map((m) => {
@@ -117,10 +122,10 @@ export function PaymentDialog({
                 aria-checked={active}
                 onClick={() => setMethod(m.value)}
                 className={cn(
-                  'flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-sm transition-colors',
+                  'flex flex-col items-center gap-1.5 rounded-lg border px-2 py-2.5 text-[13px] transition-colors',
                   active
-                    ? 'border-primary bg-accent text-accent-foreground font-medium'
-                    : 'border-border bg-card hover:border-primary/35'
+                    ? 'border-primary bg-primary/10 font-medium text-primary'
+                    : 'border-transparent bg-muted/50 text-foreground hover:bg-muted'
                 )}
               >
                 <Icon className="h-5 w-5" />
@@ -134,13 +139,13 @@ export function PaymentDialog({
           <div className="space-y-3">
             <div className="grid grid-cols-4 gap-2">
               {quickAmounts.map((amt) => (
-                <Button key={amt} type="button" variant="outline" size="sm" className="font-price" onClick={() => setReceived(String(amt))}>
+                <Button key={amt} type="button" variant="outline" size="sm" className="h-8 rounded-lg font-price" onClick={() => setReceived(String(amt))}>
                   {amt.toLocaleString('en-PK')}
                 </Button>
               ))}
             </div>
             <div>
-              <label htmlFor="received" className="mb-1.5 block text-sm font-medium">Amount received</label>
+              <label htmlFor="received" className="mb-1.5 block text-[13px] font-medium">Amount received</label>
               <Input
                 id="received"
                 inputMode="decimal"
@@ -151,9 +156,12 @@ export function PaymentDialog({
                 autoFocus
               />
             </div>
-            <div className="flex items-center justify-between rounded-xl bg-muted px-4 py-3">
-              <span className="text-sm text-muted-foreground">Change to return</span>
-              <span className={cn('font-price text-xl font-semibold', !enough && 'text-destructive')}>
+            <div className={cn(
+              'flex items-center justify-between rounded-lg px-4 py-3',
+              enough ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'
+            )}>
+              <span className="text-[13px] font-medium">Change to return</span>
+              <span className="font-price text-xl font-semibold tracking-tight">
                 {formatMoney(change, currencySymbol)}
               </span>
             </div>
@@ -167,7 +175,7 @@ export function PaymentDialog({
           <div className="space-y-3">
             {customerId ? (
               <>
-                <div className="flex items-center gap-2.5 rounded-xl border bg-card px-3.5 py-3">
+                <div className="flex items-center gap-2.5 rounded-lg bg-muted/50 px-3.5 py-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <UserRound className="h-4.5 w-4.5" />
                   </div>
@@ -179,7 +187,7 @@ export function PaymentDialog({
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="cash-now" className="mb-1.5 block text-sm font-medium">Cash paid now (optional)</label>
+                  <label htmlFor="cash-now" className="mb-1.5 block text-[13px] font-medium">Cash paid now (optional)</label>
                   <Input
                     id="cash-now"
                     inputMode="decimal"
@@ -190,9 +198,9 @@ export function PaymentDialog({
                     autoFocus
                   />
                 </div>
-                <div className="flex items-center justify-between rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/40">
-                  <span className="text-sm font-medium text-amber-900 dark:text-amber-300">Added to udhaar book</span>
-                  <span className="font-price text-lg font-bold text-amber-900 dark:text-amber-200">
+                <div className="flex items-center justify-between rounded-lg border border-amber-500/25 bg-amber-500/10 px-4 py-3">
+                  <span className="text-[13px] font-medium text-amber-700 dark:text-amber-400">Added to udhaar book</span>
+                  <span className="font-price text-lg font-bold text-amber-700 dark:text-amber-300">
                     {formatMoney(Math.max(0, total - cashNowNum), currencySymbol)}
                   </span>
                 </div>
@@ -203,7 +211,7 @@ export function PaymentDialog({
                 )}
               </>
             ) : (
-              <div className="flex items-start gap-2.5 rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+              <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-4 py-3.5 text-[13px] leading-relaxed text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
                   Udhaar needs a saved customer — pick who is taking the credit from the <strong>Customer</strong> selector in the cart first.
@@ -212,13 +220,13 @@ export function PaymentDialog({
             )}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed bg-muted/50 px-4 py-6 text-center text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border bg-muted/50 px-4 py-6 text-center text-[13px] text-muted-foreground">
             {method === 'CARD' ? 'Insert, tap or swipe the card on the terminal.' : 'Show the QR code and confirm the mobile transfer.'}
             <p className="mt-1 text-foreground font-medium">Charge {formatMoney(total, currencySymbol)}</p>
           </div>
         )}
 
-        <Button size="lg" className="h-12 w-full text-base" disabled={!canConfirm} onClick={confirm}>
+        <Button size="lg" className="h-12 w-full text-base font-semibold" disabled={!canConfirm} onClick={confirm}>
           {busy ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (

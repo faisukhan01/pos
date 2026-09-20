@@ -40,7 +40,7 @@ import { paymentLabel, type DashboardData, type ShiftsSummary } from '@/lib/type
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import type { ViewKey } from '@/components/layout/app-shell'
 
-const PIE_COLORS = ['#166b4e', '#c98a2b', '#4d8ba8', '#b06343', '#8a5a9e']
+const PIE_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)']
 
 export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const { user, activeBranchId, branches, settings } = useAuthStore()
@@ -176,7 +176,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
         {/* Sales trend */}
         <Card className="xl:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[15px]">Sales — last 14 days</CardTitle>
+            <CardTitle className="text-[15px] tracking-tight">Sales — last 14 days</CardTitle>
           </CardHeader>
           <CardContent className="h-[260px]">
             {loading && !data ? (
@@ -204,7 +204,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
         {/* Payment mix */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-[15px]">Payments — last 7 days</CardTitle>
+            <CardTitle className="text-[15px] tracking-tight">Payments — last 7 days</CardTitle>
           </CardHeader>
           <CardContent className="h-[260px]">
             {loading && !data ? (
@@ -243,7 +243,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
         {/* Top products */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-[15px]">Top products — 7 days</CardTitle>
+            <CardTitle className="text-[15px] tracking-tight">Top products — 7 days</CardTitle>
           </CardHeader>
           <CardContent>
             {loading && !data ? (
@@ -275,7 +275,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
         {/* Low stock */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-[15px]">Needs restocking</CardTitle>
+            <CardTitle className="text-[15px] tracking-tight">Needs restocking</CardTitle>
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onNavigate('inventory')}>
               All stock <ArrowUpRight className="h-3 w-3" />
             </Button>
@@ -284,7 +284,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
             {loading && !data ? (
               <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-9 rounded-lg" />)}</div>
             ) : (data?.lowStock?.length ?? 0) === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">Everything is well stocked. 👍</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">Everything is well stocked.</p>
             ) : (
               <ul className="space-y-2">
                 {data?.lowStock.slice(0, 6).map((p) => (
@@ -306,7 +306,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
         {/* Recent sales */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-[15px]">Recent sales</CardTitle>
+            <CardTitle className="text-[15px] tracking-tight">Recent sales</CardTitle>
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onNavigate('sales')}>
               All sales <ArrowUpRight className="h-3 w-3" />
             </Button>
@@ -344,7 +344,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-2">
         <Card>
           <CardContent className="flex items-center gap-3 py-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
               <TrendingUp className="h-5 w-5" />
             </div>
             <div>
@@ -399,11 +399,11 @@ function StatCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
-          <p className="font-price truncate text-xl font-bold tracking-tight">{value}</p>
+          <p className="font-price truncate text-xl font-semibold tracking-tight">{value}</p>
           <p className="truncate text-[11px] text-muted-foreground">{hint}</p>
         </div>
         {action && (
-          <Button variant="ghost" size="sm" className="h-7 shrink-0 text-xs" onClick={action.onClick}>
+          <Button variant="ghost" size="sm" className="hidden h-7 shrink-0 text-xs sm:inline-flex" onClick={action.onClick}>
             {action.label}
           </Button>
         )}

@@ -1,4 +1,4 @@
-# Ledger POS — Complete POS & Retail Management System
+# Nova POS — Simple, Fast Selling for Every Store
 
 A production-minded, full-stack point-of-sale and retail management platform for
 small and medium local businesses — built for the counter first: **scan → add to
@@ -39,7 +39,7 @@ cart → take payment → print receipt**, with inventory that stays honest.
 **Platform**
 - Multi-branch data model (Business → Branch → per-branch stock & pricing).
 - Role-based access with granular permissions enforced **server-side**:
-  Owner, Admin, Manager, Cashier, Inventory Staff, Accountant.
+  Owner, Manager, Cashier — simple roles, real server-side enforcement.
 - Secure sessions (scrypt password hashing, HMAC-signed httpOnly cookies),
   Zod validation, idempotency keys for safe sale retries, PKR-first but
   configurable currency.
@@ -68,8 +68,6 @@ The database seeds itself on first load with a realistic demo store
 | Owner           | owner@pos.local        | owner123        |
 | Manager         | manager@pos.local      | manager123      |
 | Cashier         | cashier@pos.local      | cashier123      |
-| Inventory Staff | inventory@pos.local    | inventory123    |
-| Accountant      | accountant@pos.local   | accountant123   |
 
 ### Testing the scanner without hardware
 

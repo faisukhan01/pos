@@ -88,7 +88,7 @@ export function ShiftsView() {
               <div className="flex items-center gap-3">
                 <span className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/15">
                   <Vault className="h-5 w-5" />
-                  <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-300 ring-2 ring-primary animate-pulse" />
+                  <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-teal-300 ring-2 ring-primary animate-pulse" />
                 </span>
                 <div>
                   <p className="text-[13px] font-medium opacity-90">Drawer open since {formatTime(active.openedAt)}</p>
@@ -184,7 +184,7 @@ export function ShiftsView() {
           ) : (
             <div className="overflow-x-auto scrollbar-thin">
               <Table>
-                <TableHeader>
+                <TableHeader className="[&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                   <TableRow>
                     <TableHead>Opened</TableHead>
                     <TableHead className="hidden sm:table-cell">Closed</TableHead>
@@ -215,7 +215,7 @@ export function ShiftsView() {
                         <TableCell className="text-right font-price text-sm font-semibold">{formatMoney(s.countedCash ?? 0, symbol)}</TableCell>
                         <TableCell className="text-right">
                           {(s.variance ?? 0) === 0 ? (
-                            <Badge variant="outline" className="border-emerald-300 text-emerald-700 dark:text-emerald-300">
+                            <Badge variant="outline" className="border-teal-300 text-teal-700 dark:text-teal-300">
                               Even
                             </Badge>
                           ) : (
@@ -224,7 +224,7 @@ export function ShiftsView() {
                               className={cn(
                                 'font-price',
                                 over
-                                  ? 'border-emerald-300 text-emerald-700 dark:text-emerald-300'
+                                  ? 'border-teal-300 text-teal-700 dark:text-teal-300'
                                   : 'border-destructive/40 text-destructive'
                               )}
                             >
@@ -300,7 +300,7 @@ function MiniStat({
       <p
         className={cn(
           'font-price truncate text-sm font-semibold',
-          tone === 'pos' && 'text-emerald-700 dark:text-emerald-300',
+          tone === 'pos' && 'text-teal-600 dark:text-teal-400',
           tone === 'neg' && 'text-destructive'
         )}
       >
@@ -529,10 +529,10 @@ function CloseDrawerDialog({
                   className={cn(
                     'font-price rounded-lg px-3 py-2 text-sm font-medium',
                     variance === 0
-                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                      ? 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300'
                       : variance > 0
-                        ? 'bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-300'
-                        : 'bg-red-50 text-destructive dark:bg-red-950'
+                        ? 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                        : 'bg-destructive/10 text-destructive'
                   )}
                 >
                   {variance === 0
@@ -701,7 +701,7 @@ function ShiftReceipt({
 
       <div className="my-3 border-t border-dashed border-black/60" />
       <p className="text-center text-[10px]">Returns are assumed refunded in cash. Keep this receipt with the drawer count.</p>
-      <p className="mt-1 text-center text-[10px]">Printed by Ledger POS</p>
+      <p className="mt-1 text-center text-[10px]">Printed by Nova POS</p>
     </div>
   )
 }

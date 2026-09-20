@@ -32,13 +32,13 @@ export function CartPanel({ currencySymbol, onCharge, busy }: CartPanelProps) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border bg-card shadow-sm" aria-label="Shopping cart">
+    <div className="flex h-full flex-col rounded-xl border border-border/70 bg-card shadow-sm" aria-label="Shopping cart">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
           <ShoppingBasket className="h-4.5 w-4.5 text-primary" />
-          <h2 className="text-sm font-semibold">Current sale</h2>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          <h2 className="text-sm font-semibold tracking-tight">Current sale</h2>
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
             {totals.itemCount} item{totals.itemCount === 1 ? '' : 's'}
           </span>
         </div>
@@ -64,18 +64,18 @@ export function CartPanel({ currencySymbol, onCharge, busy }: CartPanelProps) {
       <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-2">
         {lines.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-10 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
               <ShoppingBasket className="h-6 w-6 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium">Cart is empty</p>
-            <p className="max-w-[220px] text-xs text-muted-foreground">
+            <p className="max-w-[220px] text-[11px] text-muted-foreground">
               Scan a barcode or tap a product to start the sale.
             </p>
           </div>
         ) : (
           <ul className="space-y-1.5">
             {lines.map((line) => (
-              <li key={line.productId} className="rounded-xl border bg-background px-3 py-2.5">
+              <li key={line.productId} className="rounded-lg bg-muted/50 px-3 py-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{line.name}</p>
@@ -92,11 +92,11 @@ export function CartPanel({ currencySymbol, onCharge, busy }: CartPanelProps) {
                   </button>
                 </div>
                 <div className="mt-2 flex items-center justify-between">
-                  <div className="flex items-center rounded-lg border">
+                  <div className="flex items-center gap-0.5">
                     <button
                       onClick={() => setQty(line.productId, line.quantity - 1)}
                       aria-label="Decrease quantity"
-                      className="flex h-7 w-7 items-center justify-center rounded-l-md transition-colors hover:bg-muted disabled:opacity-40"
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-muted transition-colors hover:bg-accent disabled:opacity-40"
                       disabled={line.quantity <= 1}
                     >
                       <Minus className="h-3.5 w-3.5" />
@@ -108,7 +108,7 @@ export function CartPanel({ currencySymbol, onCharge, busy }: CartPanelProps) {
                         setQty(line.productId, Number.isFinite(v) && v > 0 ? v : 0)
                       }}
                       aria-label={`Quantity of ${line.name}`}
-                      className="h-7 w-10 border-x bg-transparent text-center text-sm font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                      className="h-7 w-9 bg-transparent text-center text-[13px] font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <button
                       onClick={() => {
@@ -129,7 +129,7 @@ export function CartPanel({ currencySymbol, onCharge, busy }: CartPanelProps) {
                         }
                       }}
                       aria-label="Increase quantity"
-                      className="flex h-7 w-7 items-center justify-center rounded-r-md transition-colors hover:bg-muted disabled:opacity-40"
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-muted transition-colors hover:bg-accent disabled:opacity-40"
                       disabled={line.quantity >= line.maxStock}
                     >
                       <Plus className="h-3.5 w-3.5" />
@@ -140,7 +140,7 @@ export function CartPanel({ currencySymbol, onCharge, busy }: CartPanelProps) {
                   </span>
                 </div>
                 {line.maxStock <= 5 && (
-                  <p className="mt-1 text-[11px] text-amber-600">Only {line.maxStock} left on the shelf</p>
+                  <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">Only {line.maxStock} left on the shelf</p>
                 )}
               </li>
             ))}
@@ -174,7 +174,7 @@ export function CartPanel({ currencySymbol, onCharge, busy }: CartPanelProps) {
           </Select>
         </div>
 
-        <div className="flex items-center justify-between gap-2 text-sm">
+        <div className="flex items-center justify-between gap-2 text-[13px]">
           <label htmlFor="discount" className="text-muted-foreground">Discount (Rs)</label>
           <Input
             id="discount"
@@ -200,15 +200,15 @@ export function CartPanel({ currencySymbol, onCharge, busy }: CartPanelProps) {
             </div>
           )}
           {totals.discount > 0 && (
-            <div className="flex justify-between text-emerald-700">
+            <div className="flex justify-between text-primary">
               <span>Discount</span>
               <span className="font-price">-{formatMoney(totals.discount, currencySymbol)}</span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between rounded-xl bg-primary px-4 py-2.5 text-primary-foreground">
-          <span className="text-sm font-medium">Total due</span>
+        <div className="flex items-center justify-between rounded-lg bg-primary px-4 py-2.5 text-primary-foreground">
+          <span className="text-[13px] font-medium">Total due</span>
           <span className="font-price text-xl font-bold tracking-tight">
             {formatMoney(totals.total, currencySymbol)}
           </span>

@@ -1,5 +1,5 @@
-// Granular permissions — enforced on the server for every sensitive operation,
-// mirrored on the client purely to control navigation visibility.
+// Three clean roles — simple to understand, enforced on the server for every
+// sensitive operation, mirrored on the client purely for navigation visibility.
 
 export const PERMISSIONS = {
   DASHBOARD_VIEW: 'dashboard.view',
@@ -29,9 +29,11 @@ export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
 
 const ALL: Permission[] = Object.values(PERMISSIONS) as Permission[]
 
+export const ROLES = ['OWNER', 'MANAGER', 'CASHIER'] as const
+export type Role = (typeof ROLES)[number]
+
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   OWNER: ALL,
-  ADMIN: ALL,
   MANAGER: ALL.filter(
     (p) => p !== PERMISSIONS.USERS_MANAGE && p !== PERMISSIONS.SETTINGS_MANAGE
   ),
@@ -46,29 +48,6 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.SHIFTS_VIEW,
     PERMISSIONS.SHIFTS_MANAGE,
   ],
-  INVENTORY_STAFF: [
-    PERMISSIONS.DASHBOARD_VIEW,
-    PERMISSIONS.PRODUCTS_VIEW,
-    PERMISSIONS.PRODUCTS_MANAGE,
-    PERMISSIONS.INVENTORY_VIEW,
-    PERMISSIONS.INVENTORY_MANAGE,
-    PERMISSIONS.PURCHASES_VIEW,
-    PERMISSIONS.PURCHASES_MANAGE,
-    PERMISSIONS.SUPPLIERS_VIEW,
-    PERMISSIONS.SUPPLIERS_MANAGE,
-  ],
-  ACCOUNTANT: [
-    PERMISSIONS.DASHBOARD_VIEW,
-    PERMISSIONS.SALES_VIEW,
-    PERMISSIONS.PURCHASES_VIEW,
-    PERMISSIONS.EXPENSES_VIEW,
-    PERMISSIONS.EXPENSES_MANAGE,
-    PERMISSIONS.REPORTS_VIEW,
-    PERMISSIONS.PRODUCTS_VIEW,
-    PERMISSIONS.CUSTOMERS_VIEW,
-    PERMISSIONS.SUPPLIERS_VIEW,
-    PERMISSIONS.SHIFTS_VIEW,
-  ],
 }
 
 export function hasPermission(role: string, permission: Permission): boolean {
@@ -80,11 +59,17 @@ export function hasPermission(role: string, permission: Permission): boolean {
 export function roleLabel(role: string): string {
   switch (role) {
     case 'OWNER': return 'Owner'
-    case 'ADMIN': return 'Administrator'
-    case 'MANAGER': return 'Store Manager'
+    case 'MANAGER': return 'Manager'
     case 'CASHIER': return 'Cashier'
-    case 'INVENTORY_STAFF': return 'Inventory Staff'
-    case 'ACCOUNTANT': return 'Accountant'
     default: return role
+  }
+}
+
+export function roleDescription(role: string): string {
+  switch (role) {
+    case 'OWNER': return 'Full access — everything in the store.'
+    case 'MANAGER': return 'Runs the day: sales, stock, staff-free zones.'
+    case 'CASHIER': return 'Sells at the register and handles returns.'
+    default: return ''
   }
 }

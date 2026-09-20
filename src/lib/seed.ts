@@ -24,13 +24,13 @@ interface SeedProduct {
 }
 
 const CATEGORIES = [
-  { name: 'Groceries', color: '#166b4e' },
-  { name: 'Beverages', color: '#8a5a1e' },
-  { name: 'Snacks', color: '#b5541c' },
-  { name: 'Dairy & Eggs', color: '#3178a6' },
-  { name: 'Bakery', color: '#9d5c9d' },
-  { name: 'Household', color: '#5a6b7a' },
-  { name: 'Personal Care', color: '#c04f6d' },
+  { name: 'Groceries', color: '#7c3aed' },
+  { name: 'Beverages', color: '#d97706' },
+  { name: 'Snacks', color: '#ea580c' },
+  { name: 'Dairy & Eggs', color: '#0d9488' },
+  { name: 'Bakery', color: '#db2777' },
+  { name: 'Household', color: '#64748b' },
+  { name: 'Personal Care', color: '#e11d48' },
 ]
 
 const PRODUCTS: SeedProduct[] = [
@@ -89,20 +89,20 @@ export async function ensureSeeded(): Promise<boolean> {
 
   const business = await db.business.create({
     data: {
-      name: 'Mehran Traders',
+      name: 'Nova Mart',
       businessType: 'RETAIL',
       currency: 'PKR',
-      phone: '+92 21 3456 7890',
-      email: 'hello@mehrantraders.pk',
-      address: 'Shop 12, Saddar Bazaar, Karachi',
+      phone: '+92 42 3577 1200',
+      email: 'hello@novamart.pk',
+      address: 'Ground Floor, Gulberg III, Lahore',
     },
   })
 
   await db.settings.create({
     data: {
       businessId: business.id,
-      receiptHeader: 'Mehran Traders — Saddar Bazaar, Karachi',
-      receiptFooter: 'Goods can be exchanged within 7 days with this receipt.',
+      receiptHeader: 'Nova Mart — Gulberg III, Lahore',
+      receiptFooter: 'Exchanges accepted within 7 days with this receipt. Thank you!',
       currencySymbol: 'Rs',
     },
   })
@@ -110,10 +110,10 @@ export async function ensureSeeded(): Promise<boolean> {
   const branch = await db.branch.create({
     data: {
       businessId: business.id,
-      name: 'Main Store — Saddar',
+      name: 'Main Store',
       code: 'MAIN',
-      phone: '+92 21 3456 7890',
-      address: 'Shop 12, Saddar Bazaar, Karachi',
+      phone: '+92 42 3577 1200',
+      address: 'Ground Floor, Gulberg III, Lahore',
       isMain: true,
     },
   })
@@ -123,8 +123,6 @@ export async function ensureSeeded(): Promise<boolean> {
       { name: 'Ali Raza', email: 'owner@pos.local', password: 'owner123', role: 'OWNER' },
       { name: 'Fatima Khan', email: 'manager@pos.local', password: 'manager123', role: 'MANAGER' },
       { name: 'Hamza Ahmed', email: 'cashier@pos.local', password: 'cashier123', role: 'CASHIER' },
-      { name: 'Sana Malik', email: 'inventory@pos.local', password: 'inventory123', role: 'INVENTORY_STAFF' },
-      { name: 'Bilal Hassan', email: 'accountant@pos.local', password: 'accountant123', role: 'ACCOUNTANT' },
     ].map((u) =>
       db.user.create({
         data: {
@@ -191,16 +189,16 @@ export async function ensureSeeded(): Promise<boolean> {
   // Suppliers, customers
   await db.supplier.createMany({
     data: [
-      { name: 'National Distributors', phone: '+92 21 3452 1100', address: 'Jodia Bazaar, Karachi', note: 'Beverages & snacks' },
-      { name: 'Al-Karam Wholesale', phone: '+92 21 3452 8822', address: 'Ranchore Line, Karachi', note: 'Groceries & rice' },
-      { name: 'Fresh Farms Co', phone: '+92 21 3453 4455', address: 'Korangi, Karachi', note: 'Dairy & bakery' },
+      { name: 'Metro Wholesale', phone: '+92 42 3578 2200', address: 'Shah Alam Market, Lahore', note: 'Beverages & snacks' },
+      { name: 'Al-Noor Distributors', phone: '+92 42 3578 8844', address: 'Badami Bagh, Lahore', note: 'Groceries & rice' },
+      { name: 'Fresh Daily Farms', phone: '+92 42 3579 4411', address: 'Raiwind Road, Lahore', note: 'Dairy & bakery' },
     ],
   })
   await db.customer.createMany({
     data: [
-      { name: 'Ahmed Store (Wholesale)', phone: '+92 300 8212345', address: 'Saddar, Karachi' },
+      { name: 'Ahmed Store (Wholesale)', phone: '+92 300 8212345', address: 'Gulberg, Lahore' },
       { name: 'Kiran Bibi', phone: '+92 331 4455901' },
-      { name: 'Usman Traders', phone: '+92 345 1223344', address: 'Garden East, Karachi' },
+      { name: 'Usman Traders', phone: '+92 345 1223344', address: 'Model Town, Lahore' },
     ],
   })
   const customers = await db.customer.findMany()

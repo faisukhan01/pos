@@ -342,8 +342,8 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
               className={cn(
                 'flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11.5px] font-medium transition-colors',
                 activeShift
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900'
-                  : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900'
+                  ? 'border-primary/25 bg-primary/10 text-primary hover:bg-primary/15'
+                  : 'border-amber-500/25 bg-amber-500/10 text-amber-700 hover:bg-amber-500/15 dark:text-amber-400'
               )}
               aria-label="Open cash drawer view"
             >
@@ -365,7 +365,7 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
                 'flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11.5px] font-medium transition-colors',
                 !online
                   ? 'border-destructive/50 bg-destructive/10 text-destructive'
-                  : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900'
+                  : 'border-amber-500/25 bg-amber-500/10 text-amber-700 hover:bg-amber-500/15 dark:text-amber-400'
               )}
               aria-label={syncing ? 'Syncing queued sales' : 'Sync queued sales now'}
             >
@@ -394,7 +394,7 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
             aria-selected={categoryId === null}
             className={cn(
               'shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors',
-              categoryId === null ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:bg-accent'
+              categoryId === null ? 'border-primary bg-primary text-primary-foreground' : 'border-transparent bg-muted/70 text-foreground/80 hover:bg-accent hover:text-foreground'
             )}
           >
             All products
@@ -407,7 +407,7 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
               aria-selected={categoryId === c.id}
               className={cn(
                 'flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors',
-                categoryId === c.id ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:bg-accent'
+                categoryId === c.id ? 'border-primary bg-primary text-primary-foreground' : 'border-transparent bg-muted/70 text-foreground/80 hover:bg-accent hover:text-foreground'
               )}
             >
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color }} />
@@ -424,12 +424,12 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
           {loading && products.length === 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {Array.from({ length: 10 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 rounded-2xl" />
+                <Skeleton key={i} className="h-28 rounded-xl" />
               ))}
             </div>
           ) : products.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
                 <PackageSearch className="h-7 w-7 text-muted-foreground" />
               </div>
               <div>
@@ -454,14 +454,14 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
                     onClick={() => addToCart(p)}
                     disabled={out}
                     className={cn(
-                      'card-lift group relative flex flex-col rounded-2xl border bg-card p-3 text-left focus-visible:outline-2 focus-visible:outline-ring',
-                      out ? 'opacity-55 cursor-not-allowed' : 'hover:border-primary/45'
+                      'card-lift group relative flex flex-col rounded-xl border bg-card p-3 text-left focus-visible:outline-2 focus-visible:outline-ring',
+                      out ? 'cursor-not-allowed opacity-55' : 'hover:border-primary/40'
                     )}
                   >
                     <div className="flex items-start gap-2.5">
                       <span
                         aria-hidden
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[13px] font-bold uppercase"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[13px] font-semibold uppercase"
                         style={{
                           backgroundColor: `color-mix(in oklch, ${p.category?.color ?? '#5a6b7a'} 14%, transparent)`,
                           color: p.category?.color ?? '#5a6b7a',
@@ -473,12 +473,12 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
                         <p className="line-clamp-2 min-h-[2.4em] text-[13px] font-medium leading-snug">{p.name}</p>
                         <span
                           className={cn(
-                            'mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                            'mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
                             out
                               ? 'bg-destructive/10 text-destructive'
                               : p.stock <= 5
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                                ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                                : 'bg-muted text-muted-foreground'
                           )}
                         >
                           {out ? 'Out of stock' : `${p.stock} left`}
@@ -518,7 +518,7 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
             <Button
               size="lg"
               className={cn(
-                'fixed bottom-5 right-5 z-40 h-13 gap-2 rounded-full px-6 shadow-xl transition-all',
+                'fixed bottom-5 right-5 z-40 h-13 gap-2 rounded-full px-6 shadow-lg transition-all',
                 cartCount === 0 && 'translate-y-24 opacity-0 pointer-events-none'
               )}
             >

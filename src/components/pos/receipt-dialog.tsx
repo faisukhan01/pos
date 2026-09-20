@@ -52,11 +52,11 @@ export function ReceiptDialog({
       <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" /> Sale completed
+            <CheckCircle2 className="h-5 w-5 text-primary" /> Sale completed
           </DialogTitle>
         </DialogHeader>
 
-        <div className="max-h-[52vh] overflow-y-auto scrollbar-thin rounded-xl border bg-white text-black">
+        <div className="max-h-[52vh] overflow-y-auto scrollbar-thin rounded-xl border bg-white text-black shadow-sm">
           <div ref={printRef} className="receipt-print bg-white">
             <div className="receipt-sheet font-mono px-5 py-5 text-[12px] leading-relaxed">
               <div className="text-center">
@@ -65,20 +65,20 @@ export function ReceiptDialog({
                 <p className="mt-1 text-[11px]">{receiptHeader}</p>
               </div>
 
-              <div className="my-3 border-t border-dashed border-black/60" />
+              <div className="my-3 border-t border-dashed border-zinc-200 print:border-black/60" />
 
               <div className="grid grid-cols-2 gap-x-3 text-[11px]">
-                <span>Invoice</span><span className="text-right font-bold">{sale.invoiceNo}</span>
-                <span>Date</span><span className="text-right">{formatDateTime(sale.createdAt)}</span>
-                <span>Cashier</span><span className="text-right">{cashierName}</span>
-                <span>Customer</span><span className="text-right">{sale.customerName}</span>
+                <span className="text-zinc-500 print:text-black">Invoice</span><span className="text-right font-bold">{sale.invoiceNo}</span>
+                <span className="text-zinc-500 print:text-black">Date</span><span className="text-right">{formatDateTime(sale.createdAt)}</span>
+                <span className="text-zinc-500 print:text-black">Cashier</span><span className="text-right">{cashierName}</span>
+                <span className="text-zinc-500 print:text-black">Customer</span><span className="text-right">{sale.customerName}</span>
               </div>
 
-              <div className="my-3 border-t border-dashed border-black/60" />
+              <div className="my-3 border-t border-dashed border-zinc-200 print:border-black/60" />
 
               <table className="w-full text-[11px]">
                 <thead>
-                  <tr className="border-b border-black/60 text-left">
+                  <tr className="border-b border-zinc-300 print:border-black/60 text-left">
                     <th className="pb-1 font-semibold">Item</th>
                     <th className="pb-1 text-center font-semibold">Qty</th>
                     <th className="pb-1 text-right font-semibold">Rate</th>
@@ -90,7 +90,7 @@ export function ReceiptDialog({
                     <tr key={it.id} className="align-top">
                       <td className="py-1 pr-2">
                         {it.name}
-                        {it.returnedQty > 0 && <span className="block text-[10px] italic">({it.returnedQty} returned)</span>}
+                        {it.returnedQty > 0 && <span className="block text-[10px] italic text-zinc-500 print:text-black">({it.returnedQty} returned)</span>}
                       </td>
                       <td className="py-1 text-center">{it.quantity}</td>
                       <td className="py-1 text-right">{formatMoney(it.unitPrice, currencySymbol)}</td>
@@ -100,7 +100,7 @@ export function ReceiptDialog({
                 </tbody>
               </table>
 
-              <div className="my-3 border-t border-dashed border-black/60" />
+              <div className="my-3 border-t border-dashed border-zinc-200 print:border-black/60" />
 
               <div className="space-y-0.5 text-[11.5px]">
                 <div className="flex justify-between"><span>Subtotal</span><span>{formatMoney(sale.subtotal, currencySymbol)}</span></div>
@@ -132,9 +132,9 @@ export function ReceiptDialog({
                 )}
               </div>
 
-              <div className="my-3 border-t border-dashed border-black/60" />
+              <div className="my-3 border-t border-dashed border-zinc-200 print:border-black/60" />
               <p className="text-center text-[11px]">{receiptFooter}</p>
-              <p className="mt-1 text-center text-[10px]">Printed by Ledger POS</p>
+              <p className="mt-1 text-center text-[10px] text-zinc-400 print:text-black">Printed by Nova POS</p>
             </div>
           </div>
         </div>

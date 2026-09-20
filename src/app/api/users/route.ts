@@ -5,7 +5,7 @@ import { handleApiError, requirePermission, ok, ApiError } from '@/lib/api-utils
 import { PERMISSIONS } from '@/lib/permissions'
 import { hashPassword } from '@/lib/auth'
 
-const VALID_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER', 'INVENTORY_STAFF', 'ACCOUNTANT'] as const
+const VALID_ROLES = ['OWNER', 'MANAGER', 'CASHIER'] as const
 
 export async function GET() {
   try {

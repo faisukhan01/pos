@@ -5,7 +5,7 @@ import { handleApiError, requirePermission, ok, ApiError } from '@/lib/api-utils
 import { PERMISSIONS } from '@/lib/permissions'
 import { hashPassword } from '@/lib/auth'
 
-const VALID_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER', 'INVENTORY_STAFF', 'ACCOUNTANT'] as const
+const VALID_ROLES = ['OWNER', 'MANAGER', 'CASHIER'] as const
 
 const patchSchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
@@ -16,7 +16,7 @@ const patchSchema = z.object({
 })
 
 async function activeAdminCount(): Promise<number> {
-  return db.user.count({ where: { active: true, role: { in: ['OWNER', 'ADMIN'] } } })
+  return db.user.count({ where: { active: true, role: 'OWNER' } })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -30,11 +30,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const losingAdmin =
       target.active &&
-      ['OWNER', 'ADMIN'].includes(target.role) &&
-      ((data.active === false) || (data.role && !['OWNER', 'ADMIN'].includes(data.role)))
+      target.role === 'OWNER' &&
+      ((data.active === false) || (data.role !== undefined && data.role !== 'OWNER'))
 
     if (losingAdmin && (await activeAdminCount()) <= 1) {
-      throw new ApiError(409, 'At least one active Owner/Admin must remain.')
+      throw new ApiError(409, 'At least one active Owner must remain.')
     }
     if (actor.id === id && data.active === false) {
       throw new ApiError(409, 'You cannot deactivate your own account while signed in.')
@@ -68,8 +68,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const target = await db.user.findUnique({ where: { id } })
     if (!target) throw new ApiError(404, 'Staff account not found.')
 
-    if (['OWNER', 'ADMIN'].includes(target.role) && target.active && (await activeAdminCount()) <= 1) {
-      throw new ApiError(409, 'At least one active Owner/Admin must remain — deactivate instead.')
+    if (target.role === 'OWNER' && target.active && (await activeAdminCount()) <= 1) {
+      throw new ApiError(409, 'At least one active Owner must remain — deactivate instead.')
     }
 
     // Past sales keep the cashier name snapshot, so hard delete is safe.

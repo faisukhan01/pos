@@ -64,7 +64,7 @@ export function HeldSalesDialog({
           <div className="max-h-[50vh] overflow-y-auto scrollbar-thin">
             {held.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-10 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
                   <PauseCircle className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <p className="text-sm font-medium">Nothing on hold</p>
@@ -78,7 +78,7 @@ export function HeldSalesDialog({
                 {held.map((h) => {
                   const t = cartTotals(h.lines, h.discount)
                   return (
-                    <li key={h.id} className="rounded-xl border bg-background p-3">
+                    <li key={h.id} className="rounded-lg bg-muted/50 p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium">{h.label}</p>

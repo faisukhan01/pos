@@ -95,7 +95,7 @@ export function ExpensesView() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-wrap items-center gap-2">
         <input
           type="month"
           value={month}
@@ -132,7 +132,7 @@ export function ExpensesView() {
             ) : (
               <div className="overflow-x-auto scrollbar-thin">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="[&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Category</TableHead>

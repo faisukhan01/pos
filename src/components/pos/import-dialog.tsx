@@ -191,7 +191,7 @@ export function ImportDialog({
           {rows.length > 0 && !result && (
             <>
               <div className="flex items-center gap-2 text-sm">
-                <Badge variant="outline" className="border-emerald-300 text-emerald-700">{validCount} ready</Badge>
+                <Badge variant="outline" className="border-teal-300 text-teal-700 dark:text-teal-300">{validCount} ready</Badge>
                 <Badge variant="outline" className="border-amber-300 text-amber-700">
                   {rows.length - validCount} with warnings
                 </Badge>
@@ -199,8 +199,8 @@ export function ImportDialog({
               </div>
               <ScrollArea className="min-h-0 flex-1 rounded-xl border">
                 <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-muted">
-                    <tr>
+                  <thead className="sticky top-0 z-10 bg-muted">
+                    <tr className="[&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                       <th className="px-2 py-2 text-left font-medium">#</th>
                       <th className="px-2 py-2 text-left font-medium">Name</th>
                       <th className="px-2 py-2 text-left font-medium">Barcode</th>
@@ -229,7 +229,7 @@ export function ImportDialog({
                                 <AlertTriangle className="h-3 w-3" /> {issue}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-emerald-700">
+                              <span className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400">
                                 <CheckCircle2 className="h-3 w-3" /> OK
                               </span>
                             )}
@@ -247,8 +247,8 @@ export function ImportDialog({
           {result && (
             <div className="flex-1 min-h-0 space-y-3">
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-xl border bg-emerald-50 dark:bg-emerald-950/50 py-3">
-                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{result.created}</p>
+                <div className="rounded-xl border bg-teal-50 py-3 dark:bg-teal-950/50">
+                  <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">{result.created}</p>
                   <p className="text-xs text-muted-foreground">products added</p>
                 </div>
                 <div className="rounded-xl border py-3">

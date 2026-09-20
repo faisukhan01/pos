@@ -176,7 +176,7 @@ export function ZReportDialog({
 
               <div className="my-3 border-t border-dashed border-black/60" />
               <p className="text-center text-[10px]">Counted cash should match “Cash Expected”. Differences must be recorded as adjustments.</p>
-              <p className="mt-1 text-center text-[10px]">Printed by Ledger POS</p>
+              <p className="mt-1 text-center text-[10px]">Printed by Nova POS</p>
             </div>
           </div>
         </div>

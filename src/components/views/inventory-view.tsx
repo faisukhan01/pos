@@ -156,8 +156,8 @@ export function InventoryView() {
   return (
     <div className="p-4 sm:p-6 space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-xs sm:w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
@@ -217,7 +217,7 @@ export function InventoryView() {
             <>
               <div className="overflow-x-auto scrollbar-thin">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="[&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                     <TableRow>
                       <TableHead>Product</TableHead>
                       <TableHead className="hidden md:table-cell">Category</TableHead>
@@ -371,7 +371,7 @@ export function InventoryView() {
                     <span
                       className={cn(
                         'absolute -left-[21.5px] top-1 h-3 w-3 rounded-full border-2 border-background',
-                        m.quantity > 0 ? 'bg-emerald-500' : 'bg-red-400'
+                        m.quantity > 0 ? 'bg-teal-500' : 'bg-destructive/60'
                       )}
                     />
                     <div className="flex items-start justify-between gap-3">
@@ -384,7 +384,7 @@ export function InventoryView() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className={cn('font-price text-sm font-semibold', m.quantity > 0 ? 'text-emerald-700' : 'text-red-600')}>
+                        <p className={cn('font-price text-sm font-semibold', m.quantity > 0 ? 'text-teal-600 dark:text-teal-400' : 'text-destructive')}>
                           {m.quantity > 0 ? '+' : ''}{formatNumber(m.quantity)}
                         </p>
                         <p className="text-[11px] text-muted-foreground">bal. {formatNumber(m.balanceAfter)}</p>

@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ledger POS — Retail Management System",
+  title: "Nova POS — Simple, Fast Selling",
   description:
-    "A complete point-of-sale and retail management system: scanning, sales, inventory, purchases, expenses and reports for local businesses.",
+    "A clean point-of-sale and retail management system: scanning, sales, inventory, purchases, expenses and reports for local businesses.",
   keywords: ["POS", "point of sale", "retail", "inventory", "billing"],
   icons: {
     icon: [{ url: "/app-icon.png", type: "image/png" }],
@@ -29,8 +29,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f9f9f6" },
-    { media: "(prefers-color-scheme: dark)", color: "#16211c" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#131316" },
   ],
 };
 

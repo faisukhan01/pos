@@ -51,7 +51,7 @@ interface Line {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  PAID: 'border-emerald-300 text-emerald-700 dark:text-emerald-300',
+  PAID: 'border-teal-300 text-teal-700 dark:text-teal-300',
   UNPAID: 'border-destructive/40 text-destructive',
   PARTIAL: 'border-amber-300 text-amber-700 dark:text-amber-300',
   COMPLETED: '',
@@ -79,8 +79,8 @@ export function PurchasesView() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-xs sm:w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
@@ -129,7 +129,7 @@ export function PurchasesView() {
             <>
               <div className="overflow-x-auto scrollbar-thin">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="[&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                     <TableRow>
                       <TableHead>Reference</TableHead>
                       <TableHead>Supplier</TableHead>

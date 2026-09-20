@@ -212,3 +212,79 @@ Unresolved / risks / next priorities:
   list (cosmetic, seed-data artifact).
 - Dev server died once mid-round after prisma db push + pkill — remember to restart after schema
   changes; check /home/z/my-project/dev.log if the app stops responding.
+
+---
+Task ID: r1..r5 (redesign phase 1)
+Agent: Z.ai Code (main orchestrator)
+Task: Complete UI redesign per user feedback: sign-in smaller & aesthetic, fresh theme, simpler roles/data.
+
+Work Log:
+- NEW DESIGN SYSTEM in globals.css: neutral zinc base + electric violet primary (oklch), refined charts (violet/amber/teal/rose/lime), true-zinc dark mode, softer borders/shadows. Same utility names kept (font-price, scrollbar-thin, card-lift, view-enter) so existing views inherit automatically.
+- Rebranded app "Ledger POS" → "Nova POS" (layout metadata, splash, shell brand, receipts/z-report/shift print footers).
+- LOGIN REDESIGNED: small centered card (max-w-380px) on ambient dot-grid + violet glow background; compact form (h-10 inputs), 3 demo quick-sign-in chips; no marketing split panel.
+- APP SHELL redesigned: narrower sidebar (w-56/60), softer nav (active = primary/10 tint pill, muted inactive), groups renamed Sell/Catalog/Business/Admin, "New Sale" → "Register", simplified header (removed duplicate business block), minimal 36px footer.
+- ROLES simplified 6 → 3 (OWNER/MANAGER/CASHIER): permissions.ts rewrite (+ROLES/roleDescription exports), users API VALID_ROLES + last-owner protections, staff-view role badges/options, seed users now 3.
+- SEED REBRAND: business "Nova Mart" (Gulberg III, Lahore), modern category colors (violet/amber/orange/teal/pink/slate/rose), Lahore-based suppliers, clean receipt footer.
+- DB reset (db/custom.db deleted + db:push) so new seed applies on next bootstrap.
+
+Stage Summary:
+- Core shell + auth + design tokens complete. Agents r6 (POS terminal) and r7 (views) will polish all views to match; then lint + browser verify + GitHub push.
+
+---
+Task ID: r7
+Agent: management-views restyle agent
+Task: Restyle dashboard + management views + remaining dialogs to Nova design
+Work Log:
+- dashboard-view: PIE_COLORS legacy green hexes → CSS chart vars (--chart-1..5, Recharts accepts var strings); money-in tile emerald → teal tints; removed noisy 👍 emoji; StatCard value font-bold → font-semibold (cleaner, keeps .font-price text-xl + text-[11px] hint); tracking-tight on all 5 card titles. Quick actions, drawer strip, charts, lists untouched functionally.
+- Shared table polish (products, inventory, sales, purchases, customers, suppliers, expenses, reports ×2, shifts): every TableHeader got [&_th]:text-[11px] uppercase tracking-wide text-muted-foreground via one wrapper class (base table.tsx not modified); rows already hover:bg-muted/50 from ui/table defaults.
+- Toolbar rows normalized to flex flex-wrap items-center gap-2 with search inputs w-full max-w-xs sm:w-64 (products, inventory, sales, purchases, customers, suppliers; expenses/reports containers too).
+- Legacy emerald/green → token tints per direction: sales STATUS COMPLETED + discount line → teal; purchases PAID badge → teal; inventory movement dots/quantities → teal-500/teal-600 positive, destructive/60 negative; import-dialog ready-badge/OK icon/created-tile → teal; stock-take success panel + positive diff badges → teal; credit-book clear-state hero flattened to flat teal tint (gradients removed for "less is more"), payment icons/amounts → teal; shifts-view live pulse dot, Even/over variance badges, MiniStat pos tone → teal.
+- shifts-view count-&-close variance preview recolored: perfect = teal, over = amber, short = bg-destructive/10 text-destructive (sky/blue removed). Receipt structures (receipt-print/receipt-sheet/ShiftReceipt, Z-report sheet, label-print/label-cell) left byte-identical — only on-screen chrome touched.
+- customers-view receivables strip flattened (amber gradient → flat amber tint, dark-mode safe); settings-view card titles + reports/dashboards get tracking-tight; settings otherwise already token-clean.
+- product-form-dialog, label-print-dialog, z-report-dialog: audited — already Nova-compliant (no legacy tints, all token classes), no edits needed.
+- Verified zero emerald/green/sky/indigo/orange hardcoded classes remain in the 17 target files (rg sweep); dark mode uses /50-/950 token pairs only.
+- bun run lint: clean. No API, route, permission, prop, handler, or export changes; staff-view untouched (already consistent).
+Stage Summary:
+- All management views + dashboard + remaining POS dialogs now sit on the Nova token system: violet primary, teal=success/info, amber=warning, destructive=danger; compact uppercase table headers, wrap-friendly toolbars with capped search widths, flat KPI tiles with .font-price values, quieter gradients/emoji removed.
+- Dashboard pie now theme-aware (CSS vars) so dark mode payment-mix colors match charts everywhere.
+- Risks: none functional — styling-only pass; Recharts accepts 'var(--chart-N)' fill strings (verified pattern already used by dashboard bar chart). paymentBadgeClass in lib/types.ts still returns emerald/sky chips for payment-method badges (file outside this task's 17-file scope — flag for a follow-up pass).
+
+---
+Task ID: r6
+Agent: POS-terminal restyle agent
+Task: Restyle POS terminal + dialogs to Nova design
+
+Work Log:
+- pos-view.tsx: drawer-status chip emerald -> violet token (border-primary/25 bg-primary/10 text-primary); offline/queued + no-drawer chips unified on a tidy amber recipe (amber-500/10 tints, dark:text-amber-400); category chips now flat borderless pills (bg-muted/70, violet solid when active); product cards rounded-2xl -> rounded-xl with softer hover (border-primary/40, card-lift supplies the shadow); stock badges: text-[10px] uppercase tracking-wide, in-stock = neutral muted, low = amber-500/10, out = destructive/10 (emerald removed); category letter tiles kept color-mix mechanism, now font-semibold; skeletons/empty-state icon rounded-xl; mobile cart FAB shadow-xl -> shadow-lg.
+- cart-panel.tsx: panel rounded-xl border-border/70; cart lines flattened from bordered boxes to borderless bg-muted/50 rounded-lg rows; steppers rebuilt compact per spec (borderless group, h-7 w-7 rounded-md bg-muted hover:bg-accent buttons, w-9 text-[13px] qty input); qty input border-x removed; "only X left" hint gets dark:amber-400; discount row text-[13px]; discount totals line text-emerald-700 -> text-primary; "Total due" strip rounded-lg bg-primary with text-[13px] label + font-price tracking-tight value; item-count pill text-[11px]; header tracking-tight; empty-state icon rounded-xl, hint text-[11px].
+- payment-dialog.tsx: added "Amount due" hero row (font-price text-2xl tracking-tight on bg-muted/50); description simplified (aria-describedby id kept); method buttons de-chromed from border-2 cards to flat rounded-lg bg-muted/50 tiles with violet active state (bg-primary/10 text-primary border-primary); quick-cash chips h-8 rounded-lg; change-due block now bg-primary/10 text-primary (destructive/10 tint when short) — green no longer used; udhaar customer card flattened to bg-muted/50; amber udhaar blocks unified on amber-500/25 + amber-500/10 tokens with dark: text variants; card/mobile hint rounded-lg dashed border-border; confirm button font-semibold.
+- receipt-dialog.tsx: .receipt-print/.receipt-sheet structure untouched (printing intact); only on-screen polish — title check icon emerald -> primary; sheet container shadow-sm; dashed separators border-zinc-200 with print:border-black/60 so thermal output stays identical; thead rule border-zinc-300 + print:border-black/60; meta labels, returned-qty note and "Printed by Nova POS" muted (text-zinc-400/500) with print:text-black to preserve print fidelity.
+- scanner-dialog.tsx: scan guide line emerald-300 -> teal-300/80; success flash emerald-500/30 -> teal-500/30; failure flash red-500/30 -> bg-destructive/40; removed an invisible (opacity-0 border) decorative corner span; all logic/beeps/guards untouched.
+- product-not-found-dialog.tsx: scanned-code block flattened (rounded-lg bg-muted/60) with an uppercase text-[11px] label hint; amber icon kept.
+- held-sales-dialog.tsx: held rows flattened from bordered boxes to bg-muted/50 rounded-lg; empty-state icon rounded-xl.
+- shortcuts-dialog.tsx: shortcut rows borderless bg-muted/50; kbd chips bg-background on muted rows for contrast.
+- Radius system standardized: xl for large surfaces (product cards, cart panel, receipt sheet, video frame), lg for sub-surfaces, md for stepper buttons, full for pills. Green/emerald/red raw colors fully removed from all 8 files (grep-verified); no indigo/blue introduced.
+
+Stage Summary:
+- POS terminal + all 6 dialogs now match the Nova design system (zinc neutrals + violet primary, amber/teal accents), flatter and quieter: fewer nested borders, consistent radius/typography (text-[13px]/text-[11px], tracking-tight headings), softer shadows, token-only colors that hold in dark mode.
+- Zero functional changes: props, handlers, testids, print CSS hooks (.receipt-print/.receipt-sheet) and component APIs untouched; PaymentDialog description copy reworded but aria wiring preserved.
+- Risks/notes: receipt on-screen separators use fixed zinc tones instead of the border token because the paper sheet is theme-independent white (border-border would vanish in dark mode and print); print: variants keep thermal output as before. Cart empty-state hint and payment "Still need…" line sizes left at text-xs/sm for readability. Lint clean.
+
+---
+Task ID: r8 (redesign verification + delivery)
+Agent: Z.ai Code (main orchestrator)
+Task: Browser-verify the Nova redesign end-to-end, rebrand assets/README, push to GitHub.
+
+Work Log:
+- Fixed paymentBadgeClass in lib/types.ts (legacy emerald/sky chips → teal/violet/amber/rose tokens).
+- Fixed staff-view hardcoded "of 19" permission count → dynamic totalPerms.
+- Fixed dashboard StatCard action button overflow at 390px (hidden below sm).
+- Browser verification (agent-browser, JS-driven due to automation click quirk): login renders small/centered card; Owner demo sign-in works; shell/sidebar/nav active states correct; Dashboard (real data Rs 20,070 today, violet charts); Register: product grid + add-to-cart toast (Face Wash Rs 540) + payment dialog (quick-cash, change calc) + sale completed INV-000070 with Nova Mart thermal receipt + cart cleared; Staff view shows exactly 3 roles (Owner/Manager/Cashier) with correct permission counts; dark mode (true zinc-black + violet) verified on dashboard.
+- NOTE for future automation: agent-browser's Playwright-style clicks do not trigger React handlers on this page — use `agent-browser eval` with element.click() instead.
+- Mobile (390px): login card fits beautifully; dashboard grid holds; footer sticky.
+- Rebranded assets: new violet-gradient Zap app-icon.png (512px), matching logo.svg; README updated to Nova POS with 3 demo roles.
+- DB reseeded as "Nova Mart" (Gulberg III, Lahore) — confirmed via /api/bootstrap.
+
+Stage Summary:
+- Redesign complete and verified end-to-end; lint clean; no page errors.
+- Remaining: GitHub push (r9), recurring review cron continues feature/quality rounds.

@@ -126,7 +126,7 @@ export function SettingsView() {
       {/* Business profile */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[15px]">
+          <CardTitle className="flex items-center gap-2 text-[15px] tracking-tight">
             <Store className="h-4 w-4 text-primary" /> Business profile
           </CardTitle>
           <CardDescription>Appears on receipts and reports.</CardDescription>
@@ -175,7 +175,7 @@ export function SettingsView() {
       {/* Receipt preferences */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[15px]">
+          <CardTitle className="flex items-center gap-2 text-[15px] tracking-tight">
             <ReceiptText className="h-4 w-4 text-primary" /> Receipts
           </CardTitle>
           <CardDescription>How your printed receipts read — works with thermal (80mm) and A4 printers.</CardDescription>
@@ -202,7 +202,7 @@ export function SettingsView() {
       {/* Money & region */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[15px]">
+          <CardTitle className="flex items-center gap-2 text-[15px] tracking-tight">
             <Coins className="h-4 w-4 text-primary" /> Currency & region
           </CardTitle>
           <CardDescription>Defaults are set for Pakistan — change the symbol and currency freely.</CardDescription>
@@ -276,7 +276,7 @@ function BranchesCard({
     <Card>
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
         <div>
-          <CardTitle className="flex items-center gap-2 text-[15px]">
+          <CardTitle className="flex items-center gap-2 text-[15px] tracking-tight">
             <Building2 className="h-4 w-4 text-primary" /> Branches
           </CardTitle>
           <CardDescription>Each branch keeps its own stock, sales and drawer shifts.</CardDescription>

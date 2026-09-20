@@ -33,7 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { api } from '@/lib/client-api'
 import { useFetch } from '@/hooks/use-fetch'
 import { useAuthStore } from '@/lib/store'
-import { ROLE_PERMISSIONS, roleLabel } from '@/lib/permissions'
+import { ROLE_PERMISSIONS, ROLES, PERMISSIONS, roleLabel } from '@/lib/permissions'
 import { formatDate } from '@/lib/format'
 
 interface StaffUser {
@@ -47,15 +47,10 @@ interface StaffUser {
   createdAt: string
 }
 
-const ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER', 'INVENTORY_STAFF', 'ACCOUNTANT'] as const
-
 const ROLE_BADGE: Record<string, string> = {
   OWNER: 'border-primary/40 bg-primary/10 text-primary',
-  ADMIN: 'border-primary/30 text-primary',
-  MANAGER: 'border-sky-300 text-sky-700 dark:text-sky-300',
-  CASHIER: 'border-amber-300 text-amber-700 dark:text-amber-300',
-  INVENTORY_STAFF: 'border-teal-300 text-teal-700 dark:text-teal-300',
-  ACCOUNTANT: 'border-purple-300 text-purple-700 dark:text-purple-300',
+  MANAGER: 'border-teal-300 text-teal-700 dark:border-teal-500/40 dark:text-teal-300',
+  CASHIER: 'border-amber-300 text-amber-700 dark:border-amber-500/40 dark:text-amber-300',
 }
 
 export function StaffView() {
@@ -151,6 +146,7 @@ export function StaffView() {
   }
 
   const permCount = (role: string) => (ROLE_PERMISSIONS[role] ?? []).length
+  const totalPerms = Object.values(PERMISSIONS).length
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
@@ -213,7 +209,7 @@ export function StaffView() {
                         </TableCell>
                         <TableCell className="hidden text-sm md:table-cell">{u.branchName ?? 'All branches'}</TableCell>
                         <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
-                          {permCount(u.role)} of 19
+                          {permCount(u.role)} of {totalPerms}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
                           <div className="flex items-center gap-2">

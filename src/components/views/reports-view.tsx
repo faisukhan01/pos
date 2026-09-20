@@ -91,7 +91,7 @@ export function ReportsView() {
   return (
     <div className="p-4 sm:p-6 space-y-4">
       {/* Controls */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div className="flex flex-wrap items-center gap-2">
         <Tabs value={tab} onValueChange={(v) => setTab(v as ReportTab)}>
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="sales">Sales</TabsTrigger>
@@ -102,7 +102,7 @@ export function ReportsView() {
           </TabsList>
         </Tabs>
         {tab !== 'inventory' && (
-          <div className="flex items-center gap-2 lg:ml-auto">
+          <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
             <Button variant="outline" onClick={() => setZOpen(true)} className="gap-2">
               <ReceiptText className="h-4 w-4" /> End-of-day
             </Button>
@@ -226,7 +226,7 @@ export function ReportsView() {
             <CardContent className="p-0">
               <div className="overflow-x-auto scrollbar-thin">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="[&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                     <TableRow>
                       <TableHead>Product</TableHead>
                       <TableHead className="hidden md:table-cell">Category</TableHead>
@@ -307,7 +307,7 @@ export function ReportsView() {
               <p className="py-12 text-center text-sm text-muted-foreground">No purchases in this period.</p>
             ) : (
               <Table>
-                <TableHeader>
+                <TableHeader className="[&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                   <TableRow>
                     <TableHead>Reference</TableHead>
                     <TableHead>Supplier</TableHead>

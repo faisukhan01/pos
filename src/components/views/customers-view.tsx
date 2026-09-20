@@ -111,8 +111,8 @@ export function CustomersView() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-xs sm:w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name or phone…" className="pl-9" aria-label="Search customers" />
         </div>
@@ -132,7 +132,7 @@ export function CustomersView() {
           className={cn(
             'flex items-center gap-4 rounded-2xl border px-5 py-4',
             (data.receivables ?? 0) > 0
-              ? 'border-amber-300/70 bg-gradient-to-r from-amber-50 to-transparent dark:border-amber-900 dark:from-amber-950/40'
+              ? 'border-amber-300/70 bg-amber-50 dark:border-amber-900/70 dark:bg-amber-950/30'
               : 'border-border bg-card'
           )}
         >
@@ -171,7 +171,7 @@ export function CustomersView() {
           ) : (
             <div className="overflow-x-auto scrollbar-thin">
               <Table>
-                <TableHeader>
+                <TableHeader className="[&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                   <TableRow>
                     <TableHead>Customer</TableHead>
                     <TableHead className="hidden md:table-cell">Phone</TableHead>

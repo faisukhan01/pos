@@ -53,7 +53,7 @@ interface SaleDetail extends SaleDto {
 }
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  COMPLETED: { label: 'Completed', className: 'border-emerald-300 text-emerald-700 dark:text-emerald-300' },
+  COMPLETED: { label: 'Completed', className: 'border-teal-300 text-teal-700 dark:text-teal-300' },
   PARTIALLY_RETURNED: { label: 'Partly returned', className: 'border-amber-300 text-amber-700 dark:text-amber-300' },
   RETURNED: { label: 'Returned', className: 'border-destructive/40 text-destructive' },
 }
@@ -131,8 +131,8 @@ export function SalesView() {
   return (
     <div className="p-4 sm:p-6 space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-xs sm:w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
@@ -185,7 +185,7 @@ export function SalesView() {
             <>
               <div className="overflow-x-auto scrollbar-thin">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="[&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                     <TableRow>
                       <TableHead>Invoice</TableHead>
                       <TableHead className="hidden md:table-cell">Customer</TableHead>
@@ -308,7 +308,7 @@ export function SalesView() {
 
                       <div className="mt-3 space-y-1 text-sm">
                         <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span className="font-price">{formatMoney(detail.subtotal, symbol)}</span></div>
-                        {detail.discount > 0 && <div className="flex justify-between text-emerald-700"><span>Discount</span><span className="font-price">-{formatMoney(detail.discount, symbol)}</span></div>}
+                        {detail.discount > 0 && <div className="flex justify-between text-teal-600 dark:text-teal-400"><span>Discount</span><span className="font-price">-{formatMoney(detail.discount, symbol)}</span></div>}
                         {detail.tax > 0 && <div className="flex justify-between text-muted-foreground"><span>Tax</span><span className="font-price">{formatMoney(detail.tax, symbol)}</span></div>}
                         <div className="flex justify-between border-t pt-1.5 text-base font-bold"><span>Total</span><span className="font-price">{formatMoney(detail.total, symbol)}</span></div>
                         <div className="flex justify-between text-muted-foreground"><span>Paid</span><span className="font-price">{formatMoney(detail.amountReceived, symbol)}</span></div>

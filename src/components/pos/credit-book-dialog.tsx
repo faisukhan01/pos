@@ -126,8 +126,8 @@ export function CreditBookDialog({
           className={cn(
             'flex items-center justify-between rounded-2xl border px-5 py-4',
             balance > 0
-              ? 'border-amber-300/70 bg-gradient-to-br from-amber-50 to-orange-50 dark:border-amber-900 dark:from-amber-950/50 dark:to-orange-950/30'
-              : 'border-emerald-300/70 bg-gradient-to-br from-emerald-50 to-teal-50 dark:border-emerald-900 dark:from-emerald-950/50 dark:to-teal-950/30'
+              ? 'border-amber-300/70 bg-amber-50 dark:border-amber-900/70 dark:bg-amber-950/30'
+              : 'border-teal-300/70 bg-teal-50 dark:border-teal-900/70 dark:bg-teal-950/30'
           )}
         >
           <div>
@@ -183,7 +183,7 @@ export function CreditBookDialog({
                           'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
                           positive
                             ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                            : 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300'
                         )}
                       >
                         <Icon className="h-4 w-4" />
@@ -197,7 +197,7 @@ export function CreditBookDialog({
                           <p
                             className={cn(
                               'font-price text-sm font-bold tabular-nums',
-                              positive ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'
+                              positive ? 'text-amber-700 dark:text-amber-400' : 'text-teal-600 dark:text-teal-400'
                             )}
                           >
                             {positive ? '+' : '−'}

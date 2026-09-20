@@ -13,7 +13,6 @@ import {
   Wallet,
   ChartColumn,
   Settings as SettingsIcon,
-  Store as StoreIcon,
   UsersRound,
   LogOut,
   Menu,
@@ -22,6 +21,7 @@ import {
   ChevronsUpDown,
   MapPin,
   Vault,
+  Zap,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
@@ -78,16 +78,16 @@ interface NavItem {
 
 const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
   {
-    title: 'Counter',
+    title: 'Sell',
     items: [
-      { key: 'pos', label: 'New Sale', icon: ScanBarcode, permission: PERMISSIONS.POS_SELL },
+      { key: 'pos', label: 'Register', icon: ScanBarcode, permission: PERMISSIONS.POS_SELL },
       { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: PERMISSIONS.DASHBOARD_VIEW },
-      { key: 'sales', label: 'Sales & Returns', icon: ReceiptText, permission: PERMISSIONS.SALES_VIEW },
+      { key: 'sales', label: 'Sales', icon: ReceiptText, permission: PERMISSIONS.SALES_VIEW },
       { key: 'shifts', label: 'Cash Drawer', icon: Vault, permission: PERMISSIONS.SHIFTS_VIEW },
     ],
   },
   {
-    title: 'Catalog & Stock',
+    title: 'Catalog',
     items: [
       { key: 'products', label: 'Products', icon: Package, permission: PERMISSIONS.PRODUCTS_VIEW },
       { key: 'inventory', label: 'Inventory', icon: Boxes, permission: PERMISSIONS.INVENTORY_VIEW },
@@ -95,7 +95,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
     ],
   },
   {
-    title: 'People & Money',
+    title: 'Business',
     items: [
       { key: 'customers', label: 'Customers', icon: Users, permission: PERMISSIONS.CUSTOMERS_VIEW },
       { key: 'suppliers', label: 'Suppliers', icon: Truck, permission: PERMISSIONS.SUPPLIERS_VIEW },
@@ -104,9 +104,9 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
     ],
   },
   {
-    title: 'System',
+    title: 'Admin',
     items: [
-      { key: 'staff', label: 'Staff & Roles', icon: UsersRound, permission: PERMISSIONS.USERS_MANAGE },
+      { key: 'staff', label: 'Staff', icon: UsersRound, permission: PERMISSIONS.USERS_MANAGE },
       { key: 'settings', label: 'Settings', icon: SettingsIcon, permission: PERMISSIONS.PRODUCTS_VIEW },
     ],
   },
@@ -114,29 +114,29 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
 
 const VIEW_TITLES: Record<ViewKey, { title: string; subtitle: string }> = {
   dashboard: { title: 'Dashboard', subtitle: 'How the store is doing today' },
-  pos: { title: 'Point of Sale', subtitle: 'Scan, add to cart, take payment' },
-  shifts: { title: 'Cash Drawer', subtitle: 'Shifts, floats and cash reconciliation' },
+  pos: { title: 'Register', subtitle: 'Ring up a sale in seconds' },
+  shifts: { title: 'Cash Drawer', subtitle: 'Shifts and cash reconciliation' },
   products: { title: 'Products', subtitle: 'Your catalog and pricing' },
   inventory: { title: 'Inventory', subtitle: 'Stock on hand and movements' },
-  sales: { title: 'Sales & Returns', subtitle: 'Every invoice, searchable' },
+  sales: { title: 'Sales', subtitle: 'Every invoice, searchable' },
   purchases: { title: 'Purchases', subtitle: 'Stock coming in from suppliers' },
   customers: { title: 'Customers', subtitle: 'Who buys from you' },
   suppliers: { title: 'Suppliers', subtitle: 'Who supplies your shelves' },
   expenses: { title: 'Expenses', subtitle: 'Money going out' },
   reports: { title: 'Reports', subtitle: 'Numbers that help you decide' },
-  staff: { title: 'Staff & Roles', subtitle: 'Accounts, permissions and access' },
+  staff: { title: 'Staff', subtitle: 'Accounts and access' },
   settings: { title: 'Settings', subtitle: 'Business profile and preferences' },
 }
 
 function SidebarNav({ active, onNavigate, user }: { active: ViewKey; onNavigate: (v: ViewKey) => void; user: { role: string } }) {
   return (
-    <nav aria-label="Main navigation" className="flex-1 overflow-y-auto scrollbar-thin px-3 py-4 space-y-5">
+    <nav aria-label="Main navigation" className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 space-y-4">
       {NAV_SECTIONS.map((section) => {
         const items = section.items.filter((i) => hasPermission(user.role, i.permission))
         if (!items.length) return null
         return (
           <div key={section.title}>
-            <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            <p className="px-3 pb-1 text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground/60">
               {section.title}
             </p>
             <ul className="space-y-0.5">
@@ -149,13 +149,13 @@ function SidebarNav({ active, onNavigate, user }: { active: ViewKey; onNavigate:
                       onClick={() => onNavigate(item.key)}
                       aria-current={isActive ? 'page' : undefined}
                       className={cn(
-                        'group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-ring',
+                        'group flex w-full items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13.5px] transition-colors focus-visible:outline-2 focus-visible:outline-ring',
                         isActive
-                          ? 'bg-primary text-primary-foreground font-medium shadow-sm'
-                          : 'text-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                          ? 'bg-primary/10 font-medium text-primary dark:bg-primary/15'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                       )}
                     >
-                      <Icon className={cn('h-[17px] w-[17px] shrink-0', isActive ? '' : 'text-muted-foreground group-hover:text-inherit')} />
+                      <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-primary' : 'opacity-70 group-hover:opacity-100')} />
                       {item.label}
                     </button>
                   </li>
@@ -172,12 +172,12 @@ function SidebarNav({ active, onNavigate, user }: { active: ViewKey; onNavigate:
 function BrandMark() {
   return (
     <div className="flex items-center gap-2.5 px-2">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-        <StoreIcon className="h-[18px] w-[18px]" strokeWidth={1.9} />
-      </div>
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+        <Zap className="h-4 w-4" strokeWidth={2.2} />
+      </span>
       <div className="leading-tight">
-        <p className="text-[15px] font-semibold tracking-tight">Ledger POS</p>
-        <p className="text-[11px] text-muted-foreground">Retail Management</p>
+        <p className="text-[15px] font-semibold tracking-tight">Nova POS</p>
+        <p className="text-[10.5px] text-muted-foreground">Retail Management</p>
       </div>
     </div>
   )
@@ -229,15 +229,15 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
     <div className="border-t border-sidebar-border p-3">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex w-full items-center gap-2.5 rounded-xl p-2 text-left transition-colors hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-ring">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+          <button className="flex w-full items-center gap-2.5 rounded-xl p-2 text-left transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[13px] font-semibold">
               {user.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
             </div>
             <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate text-sm font-medium">{user.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{roleLabel(user.role)}</p>
+              <p className="truncate text-[13px] font-medium">{user.name}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{roleLabel(user.role)}</p>
             </div>
-            <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" side="top" className="w-56">
@@ -262,8 +262,8 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
     <div className="min-h-screen flex flex-col bg-background">
       <div className="flex flex-1">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:flex lg:w-60 xl:w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar sticky top-0 h-screen">
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <aside className="hidden lg:flex lg:w-56 xl:w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar sticky top-0 h-screen">
+          <div className="flex items-center justify-between px-4 pt-4 pb-1">
             <BrandMark />
           </div>
           <SidebarNav active={view} onNavigate={navigate} user={user} />
@@ -273,7 +273,7 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
         {/* Main column */}
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+          <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/75">
             <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
               {/* Mobile nav */}
               <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -294,14 +294,18 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
               </Sheet>
 
               <div className="min-w-0 flex-1">
-                <h1 className="truncate text-[15px] sm:text-base font-semibold tracking-tight">{meta.title}</h1>
+                <h1 className="truncate text-[15px] font-semibold tracking-tight">{meta.title}</h1>
                 <p className="hidden sm:block truncate text-xs text-muted-foreground">{meta.subtitle}</p>
               </div>
+
+              {business && (
+                <p className="hidden xl:block text-[13px] text-muted-foreground">{business.name}</p>
+              )}
 
               {/* Branch selector */}
               {branches.length > 1 && !branchLocked && (
                 <Select value={activeBranchId ?? undefined} onValueChange={setActiveBranch}>
-                  <SelectTrigger size="sm" className="w-[190px] gap-2" aria-label="Active branch">
+                  <SelectTrigger size="sm" className="w-[180px] gap-2" aria-label="Active branch">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                     <SelectValue placeholder="Branch" />
                   </SelectTrigger>
@@ -323,13 +327,6 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
               >
                 {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
               </Button>
-
-              {business && (
-                <div className="hidden md:block text-right">
-                  <p className="text-[13px] font-medium leading-tight">{business.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{activeBranch?.name ?? 'Main branch'}</p>
-                </div>
-              )}
             </div>
           </header>
 
@@ -353,12 +350,10 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
           </main>
 
           {/* Sticky footer — sits at the bottom even on short views */}
-          <footer className="mt-auto border-t border-border/70">
-            <div className="flex h-10 items-center justify-between px-4 sm:px-6 text-[11.5px] text-muted-foreground">
-              <p>
-                {business ? `${business.name} · ` : ''}Ledger POS v1.0
-              </p>
-              <p className="hidden sm:block">All amounts in the store currency · Data refreshes live</p>
+          <footer className="mt-auto border-t border-border/60">
+            <div className="flex h-9 items-center justify-between px-4 sm:px-6 text-[11px] text-muted-foreground/80">
+              <p>{business ? `${business.name} · ` : ''}Nova POS</p>
+              <p className="hidden sm:block">Live data · {activeBranch?.name ?? 'Main branch'}</p>
             </div>
           </footer>
         </div>

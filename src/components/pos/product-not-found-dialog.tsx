@@ -24,8 +24,8 @@ export function ProductNotFoundDialog({ open, onOpenChange, code, onAddProduct }
             This barcode is not registered in this store. No product was added to the cart.
           </DialogDescription>
         </DialogHeader>
-        <div className="rounded-xl bg-muted px-4 py-3">
-          <p className="text-xs text-muted-foreground">Scanned code</p>
+        <div className="rounded-lg bg-muted/60 px-4 py-3">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Scanned code</p>
           <p className="font-price text-lg font-semibold tracking-wide">{code ?? '—'}</p>
         </div>
         <div className="flex gap-2">

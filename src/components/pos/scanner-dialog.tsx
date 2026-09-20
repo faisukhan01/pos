@@ -199,15 +199,14 @@ export function ScannerDialog({ open, onOpenChange, onDecoded }: ScannerDialogPr
               {/* scan guide */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="relative h-[46%] w-[78%] rounded-lg border-2 border-white/85 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]">
-                  <span className="absolute left-0 top-0 h-4 w-4 rounded-tl border-l-[3px] border-t-[3px] border-primary-foreground/0" />
-                  <div className="absolute inset-x-3 top-1/2 h-px bg-emerald-300/80" />
+                  <div className="absolute inset-x-3 top-1/2 h-px bg-teal-300/80" />
                 </div>
               </div>
               {flash && (
                 <div
                   className={cn(
                     'pointer-events-none absolute inset-0 transition-opacity',
-                    flash === 'ok' ? 'bg-emerald-500/30' : 'bg-red-500/30'
+                    flash === 'ok' ? 'bg-teal-500/30' : 'bg-destructive/40'
                   )}
                 />
               )}

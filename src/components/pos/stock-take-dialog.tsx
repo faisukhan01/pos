@@ -144,9 +144,9 @@ export function StockTakeDialog({ open, onOpenChange, branchId, onSubmitted }: S
         </DialogHeader>
 
         {done ? (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-emerald-300/60 bg-emerald-50 px-6 py-10 text-center dark:border-emerald-900 dark:bg-emerald-950/40">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900">
-              <CheckCheck className="h-6 w-6 text-emerald-700 dark:text-emerald-300" />
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-teal-300/60 bg-teal-50 px-6 py-10 text-center dark:border-teal-900 dark:bg-teal-950/40">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900">
+              <CheckCheck className="h-6 w-6 text-teal-700 dark:text-teal-300" />
             </div>
             <div>
               <p className="font-semibold">{done.message}</p>
@@ -178,7 +178,7 @@ export function StockTakeDialog({ open, onOpenChange, branchId, onSubmitted }: S
               ) : (
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-muted/95 backdrop-blur">
-                    <tr className="text-left">
+                    <tr className="text-left [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
                       <th className="px-3 py-2 font-medium">Product</th>
                       <th className="px-2 py-2 text-right font-medium">System</th>
                       <th className="px-2 py-2 text-center font-medium">Counted</th>
@@ -210,7 +210,7 @@ export function StockTakeDialog({ open, onOpenChange, branchId, onSubmitted }: S
                                 className={cn(
                                   'font-price',
                                   delta > 0
-                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                    ? 'border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-300'
                                     : 'border-destructive/40 bg-destructive/5 text-destructive'
                                 )}
                               >

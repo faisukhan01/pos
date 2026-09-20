@@ -480,6 +480,8 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
         dark={theme === 'dark'}
         onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         onSignOut={signOut}
+        showStock={!!user && hasPermission(user.role, PERMISSIONS.INVENTORY_VIEW)}
+        branchId={branchLocked ? user.branchId : activeBranchId}
       />
     </div>
   )

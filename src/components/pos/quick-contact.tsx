@@ -25,7 +25,7 @@ export function waDigits(phone: string): string {
  * Phone quick actions: tap-to-dial, WhatsApp deep link, and copy-to-clipboard.
  * Used on Customers and Suppliers rows so staff can reach people in one tap.
  */
-export function QuickContact({ phone, name, className }: { phone: string; name?: string; className?: string }) {
+export function QuickContact({ phone, name, className, compact = false }: { phone: string; name?: string; className?: string; compact?: boolean }) {
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -45,9 +45,10 @@ export function QuickContact({ phone, name, className }: { phone: string; name?:
         href={`tel:${telDigits(phone)}`}
         className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-sm font-price transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
         aria-label={`Call ${name ?? phone}`}
+        title={`Call ${phone}`}
       >
         <Phone className="h-3 w-3 text-muted-foreground" />
-        {phone}
+        {!compact && phone}
       </a>
       <a
         href={`https://wa.me/${waDigits(phone)}`}

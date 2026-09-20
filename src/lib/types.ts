@@ -167,6 +167,7 @@ export interface DashboardData {
   rangeExpenses: number
   rangePurchases: number
   salesSeries: { date: string; label: string; total: number; count: number }[]
+  expenseSeries: { date: string; label: string; total: number }[]
   paymentBreakdown: { method: string; total: number; count: number }[]
   topProducts: { name: string; quantity: number; revenue: number }[]
   lowStock: { id: string; name: string; stock: number; minStock: number; unit: string; barcode: string | null }[]

@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const rangeStart = daysAgo(rangeDays - 1)
     const prevStart = daysAgo(rangeDays * 2 - 1)
 
-    const [rangeAgg, prevAgg, lowStockItems, recentSales, rangeExpenses, rangePurchases] = await Promise.all([
+    const [rangeAgg, prevAgg, lowStockItems, recentSales, rangeExpenses, rangePurchases, rangeExpenseRows] = await Promise.all([
       db.sale.aggregate({ where: { branchId, createdAt: { gte: rangeStart } }, _sum: { total: true }, _count: true }),
       db.sale.aggregate({ where: { branchId, createdAt: { gte: prevStart, lt: rangeStart } }, _sum: { total: true } }),
       db.inventoryItem.findMany({
@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
       }),
       db.expense.aggregate({ where: { date: { gte: rangeStart } }, _sum: { amount: true } }),
       db.purchase.aggregate({ where: { branchId, createdAt: { gte: rangeStart } }, _sum: { total: true } }),
+      db.expense.findMany({ where: { date: { gte: rangeStart } }, select: { date: true, amount: true } }),
     ])
 
     const lowStock = lowStockItems
@@ -89,6 +90,18 @@ export async function GET(req: NextRequest) {
       }))
     }
 
+    // Expense series — same buckets as the sales series so the two can be charted together.
+    const expenseSeries = salesSeries.map((b) => ({ date: b.date, label: b.label, total: 0 }))
+    const expenseIndex = new Map(expenseSeries.map((b, i) => [b.date, i]))
+    for (const e of rangeExpenseRows) {
+      const key =
+        rangeDays === 1
+          ? `hour-${new Date(e.date).getHours()}`
+          : new Date(e.date).toISOString().slice(0, 10)
+      const idx = expenseIndex.get(key)
+      if (idx != null) expenseSeries[idx].total += e.amount
+    }
+
     // Payment breakdown + top products across the selected range
     const [payRows, rangeItems] = await Promise.all([
       db.sale.groupBy({
@@ -132,6 +145,7 @@ export async function GET(req: NextRequest) {
       rangeExpenses: rangeExpenses._sum.amount ?? 0,
       rangePurchases: rangePurchases._sum.total ?? 0,
       salesSeries,
+      expenseSeries,
       paymentBreakdown,
       topProducts,
       lowStock,

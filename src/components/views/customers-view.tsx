@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, Plus, Pencil, Trash2, Loader2, Users, MapPin, BookOpenText, Wallet } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Loader2, Users, MapPin, BookOpenText, Wallet, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CreditBookDialog } from '@/components/pos/credit-book-dialog'
+import { CustomerHistoryDrawer } from '@/components/pos/customer-history-drawer'
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,7 @@ export function CustomersView() {
   const [editing, setEditing] = useState<CustomerDto | null>(null)
   const [deleting, setDeleting] = useState<CustomerDto | null>(null)
   const [khataOpen, setKhataOpen] = useState<CustomerDto | null>(null)
+  const [historyOpen, setHistoryOpen] = useState<CustomerDto | null>(null)
   const [busy, setBusy] = useState(false)
 
   const canManage = !!user && hasPermission(user.role, PERMISSIONS.CUSTOMERS_MANAGE)
@@ -120,6 +122,7 @@ export function CustomersView() {
         {data && (
           <p className="hidden text-xs text-muted-foreground sm:block sm:ml-auto">
             {data.total} customer{data.total === 1 ? '' : 's'}
+            <span className="ml-2 hidden lg:inline">· click a name for purchase history</span>
           </p>
         )}
         {canManage && (
@@ -187,15 +190,21 @@ export function CustomersView() {
                   {data.items.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell>
-                        <div className="flex items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setHistoryOpen(c)}
+                          className="group/name flex items-center gap-2.5 rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-accent/60"
+                          aria-label={`View purchase history for ${c.name}`}
+                        >
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                             {c.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
                           </div>
                           <div>
-                            <p className="font-medium">{c.name}</p>
+                            <p className="font-medium underline-offset-2 group-hover/name:underline">{c.name}</p>
                             <p className="text-[11px] text-muted-foreground">Since {formatDate(c.createdAt)}</p>
                           </div>
-                        </div>
+                          <History className="h-3.5 w-3.5 text-muted-foreground/0 transition-colors group-hover/name:text-muted-foreground" />
+                        </button>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         {c.phone ? <QuickContact phone={c.phone} name={c.name} /> : '—'}
@@ -220,8 +229,19 @@ export function CustomersView() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
+                            onClick={() => setHistoryOpen(c)}
+                            aria-label={`View purchase history for ${c.name}`}
+                            title="Purchase history"
+                          >
+                            <History className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => setKhataOpen(c)}
                             aria-label={`Open udhaar book for ${c.name}`}
+                            title="Udhaar book"
                           >
                             <BookOpenText className="h-3.5 w-3.5" />
                           </Button>
@@ -245,6 +265,15 @@ export function CustomersView() {
           )}
         </CardContent>
       </Card>
+
+      {/* Purchase-history drawer */}
+      <CustomerHistoryDrawer
+        open={!!historyOpen}
+        onOpenChange={(o) => { if (!o) setHistoryOpen(null) }}
+        customer={historyOpen ? { id: historyOpen.id, name: historyOpen.name, phone: historyOpen.phone } : null}
+        currencySymbol={symbol}
+        onOpenKhata={() => { setKhataOpen(historyOpen); setHistoryOpen(null) }}
+      />
 
       {/* Udhaar (credit) book dialog */}
       <CreditBookDialog

@@ -13,6 +13,8 @@ import {
   Pie,
   Cell,
   Legend,
+  AreaChart,
+  Area,
 } from 'recharts'
 import {
   Banknote,
@@ -27,6 +29,7 @@ import {
   ChartColumn,
   Vault,
   ArrowRight,
+  ArrowDownRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -76,6 +79,20 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
     () => (data?.paymentBreakdown ?? []).reduce((s, p) => s + p.total, 0),
     [data]
   )
+
+  // Money flow: sales vs expenses side by side per bucket + net position
+  const flowChart = useMemo(() => {
+    const sales = data?.salesSeries ?? []
+    const expenses = data?.expenseSeries ?? []
+    const expMap = new Map(expenses.map((e) => [e.date, e.total]))
+    return sales.map((b) => ({
+      date: b.date,
+      label: b.label,
+      sales: b.total,
+      expenses: expMap.get(b.date) ?? 0,
+    }))
+  }, [data])
+  const netPosition = (data?.rangeSales ?? 0) - (data?.rangeExpenses ?? 0)
 
   // KPI count-up — animates from the previous value whenever data lands (incl. range switches).
   const salesNum = useCountUp(data?.rangeSales ?? 0)
@@ -433,6 +450,69 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
         </Card>
       </div>
 
+      {/* Money flow — sales vs expenses */}
+      <Card className="relative overflow-hidden">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-[15px] tracking-tight">Money flow — {rangeLabel}</CardTitle>
+          <div className="flex items-center gap-3">
+            <span className="hidden items-center gap-1.5 text-[11.5px] text-muted-foreground sm:flex">
+              <span className="h-2 w-2 rounded-full bg-[var(--chart-1)]" aria-hidden /> Sales
+              <span className="ml-2 h-2 w-2 rounded-full bg-[var(--chart-5)]" aria-hidden /> Expenses
+            </span>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11.5px] font-semibold',
+                netPosition >= 0
+                  ? 'bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300'
+                  : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+              )}
+            >
+              {netPosition >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+              <span className="tabular-nums">Net {formatMoney(Math.round(netPosition), symbol)}</span>
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent className="h-[150px]">
+          {loading && !data ? (
+            <Skeleton className="h-full w-full rounded-xl" />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={flowChart} margin={{ top: 4, right: 6, bottom: 0, left: -14 }}>
+                <defs>
+                  <linearGradient id="flowSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="flowExpenses" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--chart-5)" stopOpacity={0.24} />
+                    <stop offset="100%" stopColor="var(--chart-5)" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10.5 }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={days === 1 ? 3 : 'preserveStartEnd'}
+                />
+                <YAxis tick={{ fontSize: 10.5 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
+                <ChartTooltip
+                  formatter={(value: number, name: string) => [
+                    formatMoney(Math.round(value), symbol),
+                    name === 'sales' ? 'Sales' : 'Expenses',
+                  ]}
+                  contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 12.5 }}
+                />
+                <Area type="monotone" dataKey="sales" stroke="var(--chart-1)" strokeWidth={2} fill="url(#flowSales)" />
+                <Area type="monotone" dataKey="expenses" stroke="var(--chart-5)" strokeWidth={2} fill="url(#flowExpenses)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Money in/out summary */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-2">
         <Card className="card-lift">
@@ -451,9 +531,22 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
               <Wallet className="h-5 w-5" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-xs text-muted-foreground">Expenses {rangeLabel} (money going out)</p>
               <p className="font-price text-lg font-semibold">{formatMoney(data?.rangeExpenses ?? 0, symbol)}</p>
+              {(data?.rangeSales ?? 0) > 0 && (
+                <div className="mt-1.5 flex items-center gap-2">
+                  <div className="h-1 max-w-[120px] flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-amber-400/80 dark:bg-amber-500/70"
+                      style={{ width: `${Math.min(100, ((data?.rangeExpenses ?? 0) / (data?.rangeSales || 1)) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-[10.5px] tabular-nums text-muted-foreground">
+                    {Math.round(((data?.rangeExpenses ?? 0) / (data?.rangeSales || 1)) * 100)}% of sales
+                  </span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

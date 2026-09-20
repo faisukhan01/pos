@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, Plus, Pencil, Trash2, Loader2, Truck, Phone } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Loader2, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -32,6 +32,7 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useAuthStore } from '@/lib/store'
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { formatMoney } from '@/lib/format'
+import { QuickContact } from '@/components/pos/quick-contact'
 import type { SupplierDto } from '@/lib/types'
 
 export function SuppliersView() {
@@ -158,9 +159,7 @@ export function SuppliersView() {
                         <p className="text-[11px] text-muted-foreground">{s.address ?? '—'}</p>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {s.phone ? (
-                          <span className="flex items-center gap-1.5 text-sm font-price"><Phone className="h-3 w-3 text-muted-foreground" />{s.phone}</span>
-                        ) : '—'}
+                        {s.phone ? <QuickContact phone={s.phone} name={s.name} /> : '—'}
                       </TableCell>
                       <TableCell className="hidden max-w-[180px] truncate text-sm text-muted-foreground lg:table-cell">{s.note ?? '—'}</TableCell>
                       <TableCell className="text-right text-sm">{s.purchases ?? 0}</TableCell>

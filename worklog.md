@@ -357,3 +357,21 @@ Stage Summary:
 - Dashboard is now a proper range-aware command center; stock alerts are visible app-wide via the bell (not just on the dashboard); inventory filtered counts are honest.
 - All changes verified in browser (light + dark + mobile), lint clean, zero page errors.
 - Next-round ideas: Urdu localization, PDF/Z-report print polish, click-through from bell rows to product adjust dialog, "restock now" quick action in bell footer, dashboard spend vs sales mini-trend.
+
+---
+Task ID: cron-round-2026-09-20-4 (QA + features)
+Agent: Z.ai Code (recurring webDevReview)
+Task: QA sweep, then this round's work: bell → "Restock PO" intent flow (auto-prefilled purchase order), QuickContact tap-to-dial/WhatsApp/copy on Customers & Suppliers, expense category chips, dashboard money-card lift.
+
+Work Log:
+- QA sweep (agent-browser): all 13 views render with ZERO page errors as owner; app HTTP 200; dashboard range persistence (7 days) confirmed across reload.
+- NEW restock intent flow: bell footer now has a "Restock PO" button (permission-gated on PURCHASES_MANAGE, violet-tinted) next to "Open inventory" in a 2-col grid. Click sets sessionStorage 'pos-restock-intent' + dispatches 'pos:restock-intent' CustomEvent + navigates to Purchases. PurchasesView listens (flag + event → works whether the view is mounting fresh OR already on screen — first attempt with a one-shot ref missed the already-mounted case, caught in browser QA and fixed). CreatePurchaseDialog gains autoRestock prop: prefills every low/out product with suggested qty (2× min) exactly once via autoFilledRef guard, closes dropdown properly (bell is now a controlled DropdownMenu — plain footer buttons previously left the menu open behind the dialog; also moved useState above the early return to satisfy hooks rules). Verified both paths: from Dashboard (fresh mount) and while already on Purchases — dialog opens with 3 lines / Rs 52,080 total + success toast.
+- NEW src/components/pos/quick-contact.tsx: QuickContact = tel: link (hover pill) + WhatsApp deep link (teal MessageCircle, wa.me with PK normalization: 03XX→92 3XX, 042XX landlines→92 42XX) + copy-to-clipboard button (teal check + toast on success, graceful error toast when clipboard is blocked e.g. headless). Wired into Customers + Suppliers phone cells (replaced plain text).
+- Expenses view: category chips with per-category tints (Rent=violet, Utilities=amber, Salaries=teal, Marketing=rose, Maintenance=zinc, Supplies/Transport/Other=neutral) — token-only dark variants; verified light + dark.
+- Dashboard money in/out cards now card-lift (consistent with KPI hover).
+- bun run lint: clean. Zero page errors. Mobile 390px spot-checked (phone column hidden below md as designed).
+
+Stage Summary:
+- Stock alerts are now actionable in one tap: bell → pre-filled restock PO → save. Contacting customers/suppliers (udhaar recovery, reorders) is one tap via call/WhatsApp/copy.
+- All verified in browser (light + dark + mobile), lint clean, on GitHub after this push.
+- Next-round ideas: Urdu localization, bell row → inline adjust dialog, PDF Z-report, dashboard expenses-vs-sales mini trend, command palette low-stock section.

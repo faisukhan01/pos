@@ -30,6 +30,7 @@ import { useAuthStore } from '@/lib/store'
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { formatMoney, formatDate } from '@/lib/format'
 import { EXPENSE_CATEGORIES, paymentLabel } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 interface ExpensesResponse {
   items: { id: string; category: string; amount: number; paymentMethod: string; description: string | null; date: string }[]
@@ -37,6 +38,16 @@ interface ExpensesResponse {
   page: number
   pageSize: number
   grandTotal: number
+}
+
+// Per-category chip tints — token-only so dark mode holds.
+const EXPENSE_CATEGORY_STYLES: Record<string, string> = {
+  Rent: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300',
+  Utilities: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300',
+  Salaries: 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300',
+  Supplies: 'border-border bg-muted text-foreground',
+  Marketing: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300',
+  Maintenance: 'border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-500/30 dark:bg-zinc-500/10 dark:text-zinc-300',
 }
 
 export function ExpensesView() {
@@ -146,7 +157,11 @@ export function ExpensesView() {
                     {data.items.map((e) => (
                       <TableRow key={e.id}>
                         <TableCell className="text-sm">{formatDate(e.date)}</TableCell>
-                        <TableCell className="text-sm font-medium">{e.category}</TableCell>
+                        <TableCell>
+                          <span className={cn('inline-flex rounded-full border px-2 py-0.5 text-[11.5px] font-medium', EXPENSE_CATEGORY_STYLES[e.category] ?? 'border-border bg-muted text-muted-foreground')}>
+                            {e.category}
+                          </span>
+                        </TableCell>
                         <TableCell className="hidden max-w-[220px] truncate text-sm text-muted-foreground md:table-cell">{e.description ?? '—'}</TableCell>
                         <TableCell className="hidden text-sm sm:table-cell">{paymentLabel(e.paymentMethod)}</TableCell>
                         <TableCell className="text-right font-price font-semibold">{formatMoney(e.amount, symbol)}</TableCell>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, Plus, Pencil, Trash2, Loader2, Users, Phone, MapPin, BookOpenText, Wallet } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Loader2, Users, MapPin, BookOpenText, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -34,6 +34,7 @@ import { useAuthStore } from '@/lib/store'
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { formatMoney, formatDate } from '@/lib/format'
+import { QuickContact } from '@/components/pos/quick-contact'
 import type { CustomerDto } from '@/lib/types'
 
 export function CustomersView() {
@@ -197,9 +198,7 @@ export function CustomersView() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {c.phone ? (
-                          <span className="flex items-center gap-1.5 text-sm font-price">{<Phone className="h-3 w-3 text-muted-foreground" />}{c.phone}</span>
-                        ) : '—'}
+                        {c.phone ? <QuickContact phone={c.phone} name={c.name} /> : '—'}
                       </TableCell>
                       <TableCell className="hidden max-w-[200px] truncate text-sm text-muted-foreground lg:table-cell">
                         {c.address ? <span className="flex items-center gap-1.5"><MapPin className="h-3 w-3" />{c.address}</span> : '—'}

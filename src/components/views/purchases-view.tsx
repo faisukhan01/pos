@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Search, Plus, Loader2, ShoppingCart, Trash2, Truck, PackagePlus, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -64,9 +64,29 @@ export function PurchasesView() {
   const [debounced, setDebounced] = useState('')
   const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
+  const [autoRestock, setAutoRestock] = useState(false)
 
   const canManage = !!user && hasPermission(user.role, PERMISSIONS.PURCHASES_MANAGE)
   const branchId = activeBranchId ?? branches[0]?.id
+
+  // Restock intent from the header bell — opens the PO dialog pre-filled with
+  // every low/out-of-stock product. Handled via flag + custom event so it works
+  // whether this view is freshly mounting or already on screen.
+  useEffect(() => {
+    const check = () => {
+      if (sessionStorage.getItem('pos-restock-intent')) {
+        sessionStorage.removeItem('pos-restock-intent')
+        setAutoRestock(true)
+        setCreateOpen(true)
+      }
+    }
+    const t = setTimeout(check, 0)
+    window.addEventListener('pos:restock-intent', check)
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('pos:restock-intent', check)
+    }
+  }, [])
 
   const url = useMemo(() => {
     const sp = new URLSearchParams({ page: String(page), pageSize: '15' })
@@ -173,7 +193,11 @@ export function PurchasesView() {
       {createOpen && (
         <CreatePurchaseDialog
           open={createOpen}
-          onOpenChange={setCreateOpen}
+          onOpenChange={(o) => {
+            setCreateOpen(o)
+            if (!o) setAutoRestock(false)
+          }}
+          autoRestock={autoRestock}
           branchId={branchId}
           currencySymbol={symbol}
           onCreated={() => refetch()}
@@ -186,12 +210,14 @@ export function PurchasesView() {
 function CreatePurchaseDialog({
   open,
   onOpenChange,
+  autoRestock = false,
   branchId,
   currencySymbol,
   onCreated,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
+  autoRestock?: boolean
   branchId: string | null
   currencySymbol: string
   onCreated: () => void
@@ -228,6 +254,17 @@ function CreatePurchaseDialog({
       description: 'Quantities are suggested to reach twice the minimum level — adjust before saving.',
     })
   }
+
+  // Bell-initiated restock: prefill low-stock lines as soon as products land (runs once).
+  const autoFilledRef = useRef(false)
+  useEffect(() => {
+    if (!open || !autoRestock || autoFilledRef.current) return
+    if (!products || lines.length > 0) return
+    if (lowMissing.length === 0) return
+    autoFilledRef.current = true
+    const t = setTimeout(addLowStockLines, 0)
+    return () => clearTimeout(t)
+  }, [open, autoRestock, products, lowMissing.length, lines.length])
 
   const addLine = () => {
     if (!picker) return

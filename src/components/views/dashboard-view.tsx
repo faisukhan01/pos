@@ -435,7 +435,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
 
       {/* Money in/out summary */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-2">
-        <Card>
+        <Card className="card-lift">
           <CardContent className="flex items-center gap-3 py-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
               <TrendingUp className="h-5 w-5" />
@@ -446,7 +446,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="card-lift">
           <CardContent className="flex items-center gap-3 py-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
               <Wallet className="h-5 w-5" />

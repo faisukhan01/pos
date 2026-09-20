@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Bell, PackageX, TriangleAlert, CircleCheck, ArrowRight } from 'lucide-react'
+import { Bell, PackageX, TriangleAlert, CircleCheck, ArrowRight, PackagePlus } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,8 +34,10 @@ export function NotificationsBell({ onNavigate }: { onNavigate: (v: ViewKey) => 
   const { user, activeBranchId, branches } = useAuthStore()
   const branchId = activeBranchId ?? branches[0]?.id
   const canSee = !!user && hasPermission(user.role, PERMISSIONS.INVENTORY_VIEW)
+  const canRestock = !!user && hasPermission(user.role, PERMISSIONS.PURCHASES_MANAGE)
   const [low, setLow] = useState<StockRow[]>([])
   const [out, setOut] = useState<StockRow[]>([])
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!branchId) return
@@ -70,7 +72,13 @@ export function NotificationsBell({ onNavigate }: { onNavigate: (v: ViewKey) => 
   const preview = [...out, ...low].slice(0, 8)
 
   return (
-    <DropdownMenu onOpenChange={(open) => open && load()}>
+    <DropdownMenu
+      open={menuOpen}
+      onOpenChange={(o) => {
+        setMenuOpen(o)
+        if (o) load()
+      }}
+    >
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -152,12 +160,30 @@ export function NotificationsBell({ onNavigate }: { onNavigate: (v: ViewKey) => 
               <p className="px-3 pb-1.5 text-[11px] text-muted-foreground">+ {total - preview.length} more in Inventory</p>
             )}
             <DropdownMenuSeparator className="my-0" />
-            <div className="p-1.5">
+            <div className={cn('grid gap-1 p-1.5', canRestock && 'grid-cols-2')}>
+              {canRestock && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="justify-between gap-1 bg-primary/[0.07] text-[12.5px] font-medium text-primary hover:bg-primary/15 hover:text-primary"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    sessionStorage.setItem('pos-restock-intent', 'low')
+                    window.dispatchEvent(new CustomEvent('pos:restock-intent'))
+                    onNavigate('purchases')
+                  }}
+                >
+                  Restock PO <PackagePlus className="h-3.5 w-3.5" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-between text-[12.5px] text-primary hover:bg-primary/10 hover:text-primary"
-                onClick={() => onNavigate('inventory')}
+                className="justify-between text-[12.5px] text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setMenuOpen(false)
+                  onNavigate('inventory')
+                }}
               >
                 Open inventory <ArrowRight className="h-3.5 w-3.5" />
               </Button>

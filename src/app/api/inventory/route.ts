@@ -18,19 +18,22 @@ export async function GET(req: NextRequest) {
       active: true,
       ...(q ? { OR: [{ name: { contains: q } }, { barcode: { contains: q } }, { sku: { contains: q } }] } : {}),
     }
+    // low/out filters need column-vs-column comparison (stock <= product.minStock),
+    // which Prisma can't express in SQL — so we fetch a bounded set and filter in JS.
+    const needsPostFilter = filter === 'low' || filter === 'out'
     const [total, items] = await Promise.all([
       db.inventoryItem.count({ where: { branchId, product: productWhere } }),
       db.inventoryItem.findMany({
         where: { branchId, product: productWhere },
         include: { product: { include: { category: true } } },
         orderBy: { stock: 'asc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: needsPostFilter ? 0 : (page - 1) * pageSize,
+        take: needsPostFilter ? 2000 : pageSize,
       }),
     ])
-    let rows = items.map((i) => ({
+    const rows = items.map((i) => ({
       id: i.id,
-      productId: i.productId,
+      productId: i.product.id,
       name: i.product.name,
       barcode: i.product.barcode,
       sku: i.product.sku,
@@ -41,11 +44,14 @@ export async function GET(req: NextRequest) {
       purchasePrice: i.product.purchasePrice,
       sellingPrice: i.product.sellingPrice,
       stockValue: i.stock * i.product.purchasePrice,
-      productId: i.product.id,
     }))
-    if (filter === 'low') rows = rows.filter((r) => r.stock > 0 && r.stock <= r.minStock)
-    if (filter === 'out') rows = rows.filter((r) => r.stock <= 0)
-    return ok({ items: rows, total, page, pageSize, branchId })
+    let filtered = rows
+    if (filter === 'low') filtered = rows.filter((r) => r.stock > 0 && r.stock <= r.minStock)
+    if (filter === 'out') filtered = rows.filter((r) => r.stock <= 0)
+    const paged = needsPostFilter
+      ? filtered.slice((page - 1) * pageSize, page * pageSize)
+      : filtered
+    return ok({ items: paged, total: needsPostFilter ? filtered.length : total, page, pageSize, branchId })
   } catch (err) {
     return handleApiError(err)
   }

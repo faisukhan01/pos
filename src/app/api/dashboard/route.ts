@@ -1,20 +1,27 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { handleApiError, requirePermission, ok } from '@/lib/api-utils'
+import { handleApiError, requirePermission, ok, parseIntParam } from '@/lib/api-utils'
 import { PERMISSIONS } from '@/lib/permissions'
 import { resolveBranchId } from '@/app/api/products/route'
 import { daysAgo } from '@/lib/format'
+
+const HOUR_LABELS = [
+  '12 AM', '1 AM', '2 AM', '3 AM', '4 AM', '5 AM', '6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM',
+  '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM', '7 PM', '8 PM', '9 PM', '10 PM', '11 PM',
+]
 
 export async function GET(req: NextRequest) {
   try {
     const user = await requirePermission(PERMISSIONS.DASHBOARD_VIEW)
     const branchId = await resolveBranchId(user.branchId, req.nextUrl.searchParams.get('branchId'))
-    const today = daysAgo(0)
-    const weekAgo = daysAgo(6)
+    // Range preset in days: 1 (today, hourly series), 7, or 30. Clamped to sane bounds.
+    const rangeDays = Math.min(Math.max(parseIntParam(req.nextUrl.searchParams.get('days'), 1), 1), 90)
+    const rangeStart = daysAgo(rangeDays - 1)
+    const prevStart = daysAgo(rangeDays * 2 - 1)
 
-    const [todayAgg, weekAgg, lowStockItems, recentSales, todayExpenses, todayPurchases] = await Promise.all([
-      db.sale.aggregate({ where: { branchId, createdAt: { gte: today } }, _sum: { total: true }, _count: true }),
-      db.sale.aggregate({ where: { branchId, createdAt: { gte: weekAgo } }, _sum: { total: true }, _count: true }),
+    const [rangeAgg, prevAgg, lowStockItems, recentSales, rangeExpenses, rangePurchases] = await Promise.all([
+      db.sale.aggregate({ where: { branchId, createdAt: { gte: rangeStart } }, _sum: { total: true }, _count: true }),
+      db.sale.aggregate({ where: { branchId, createdAt: { gte: prevStart, lt: rangeStart } }, _sum: { total: true } }),
       db.inventoryItem.findMany({
         where: { branchId, product: { active: true } },
         include: { product: { select: { name: true, minStock: true, unit: true, barcode: true } } },
@@ -26,8 +33,8 @@ export async function GET(req: NextRequest) {
         take: 6,
         select: { id: true, invoiceNo: true, customerName: true, total: true, paymentMethod: true, createdAt: true, cashierName: true, status: true },
       }),
-      db.expense.aggregate({ where: { date: { gte: today } }, _sum: { amount: true } }),
-      db.purchase.aggregate({ where: { branchId, createdAt: { gte: today } }, _sum: { total: true } }),
+      db.expense.aggregate({ where: { date: { gte: rangeStart } }, _sum: { amount: true } }),
+      db.purchase.aggregate({ where: { branchId, createdAt: { gte: rangeStart } }, _sum: { total: true } }),
     ])
 
     const lowStock = lowStockItems
@@ -36,47 +43,69 @@ export async function GET(req: NextRequest) {
       .map((i) => ({ id: i.id, name: i.product.name, stock: i.stock, minStock: i.product.minStock, unit: i.product.unit, barcode: i.product.barcode }))
     const outOfStockCount = lowStockItems.filter((i) => i.stock <= 0).length
 
-    // 14-day sales series
-    const since = daysAgo(13)
-    const sales = await db.sale.findMany({
-      where: { branchId, createdAt: { gte: since } },
-      select: { createdAt: true, total: true },
-    })
-    const seriesMap = new Map<string, { total: number; count: number }>()
-    for (let d = 13; d >= 0; d--) {
-      const day = daysAgo(d)
-      seriesMap.set(day.toISOString().slice(0, 10), { total: 0, count: 0 })
-    }
-    for (const s of sales) {
-      const key = new Date(s.createdAt).toISOString().slice(0, 10)
-      const entry = seriesMap.get(key)
-      if (entry) {
-        entry.total += s.total
-        entry.count += 1
+    // Sales series — hourly buckets for "today", daily buckets otherwise.
+    let salesSeries: { date: string; label: string; total: number; count: number }[]
+    if (rangeDays === 1) {
+      const sales = await db.sale.findMany({
+        where: { branchId, createdAt: { gte: rangeStart } },
+        select: { createdAt: true, total: true },
+      })
+      const buckets = HOUR_LABELS.map((label, hour) => ({
+        date: `hour-${hour}`,
+        label,
+        total: 0,
+        count: 0,
+      }))
+      const nowHour = new Date().getHours()
+      for (const s of sales) {
+        const h = new Date(s.createdAt).getHours()
+        buckets[h].total += s.total
+        buckets[h].count += 1
       }
+      // Drop future hours so "today" doesn't trail off into empty space.
+      salesSeries = buckets.slice(0, nowHour + 1)
+    } else {
+      const sales = await db.sale.findMany({
+        where: { branchId, createdAt: { gte: rangeStart } },
+        select: { createdAt: true, total: true },
+      })
+      const seriesMap = new Map<string, { total: number; count: number }>()
+      for (let d = rangeDays - 1; d >= 0; d--) {
+        const day = daysAgo(d)
+        seriesMap.set(day.toISOString().slice(0, 10), { total: 0, count: 0 })
+      }
+      for (const s of sales) {
+        const key = new Date(s.createdAt).toISOString().slice(0, 10)
+        const entry = seriesMap.get(key)
+        if (entry) {
+          entry.total += s.total
+          entry.count += 1
+        }
+      }
+      salesSeries = Array.from(seriesMap.entries()).map(([date, v]) => ({
+        date,
+        label: new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+        ...v,
+      }))
     }
-    const salesSeries = Array.from(seriesMap.entries()).map(([date, v]) => ({
-      date,
-      label: new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-      ...v,
-    }))
 
-    // Payment breakdown — last 7 days for a meaningful sample
-    const payRows = await db.sale.groupBy({
-      by: ['paymentMethod'],
-      where: { branchId, createdAt: { gte: weekAgo } },
-      _sum: { total: true },
-      _count: true,
-    })
+    // Payment breakdown + top products across the selected range
+    const [payRows, rangeItems] = await Promise.all([
+      db.sale.groupBy({
+        by: ['paymentMethod'],
+        where: { branchId, createdAt: { gte: rangeStart } },
+        _sum: { total: true },
+        _count: true,
+      }),
+      db.saleItem.findMany({
+        where: { sale: { branchId, createdAt: { gte: rangeStart } } },
+        select: { name: true, quantity: true, lineTotal: true },
+      }),
+    ])
     const paymentBreakdown = payRows.map((r) => ({ method: r.paymentMethod, total: r._sum.total ?? 0, count: r._count }))
 
-    // Top products — last 7 days
-    const weekItems = await db.saleItem.findMany({
-      where: { sale: { branchId, createdAt: { gte: weekAgo } } },
-      select: { name: true, quantity: true, lineTotal: true },
-    })
     const topMap = new Map<string, { quantity: number; revenue: number }>()
-    for (const it of weekItems) {
+    for (const it of rangeItems) {
       const e = topMap.get(it.name) ?? { quantity: 0, revenue: 0 }
       e.quantity += it.quantity
       e.revenue += it.lineTotal
@@ -87,18 +116,21 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
 
-    const todaySales = todayAgg._sum.total ?? 0
-    const todayTransactions = todayAgg._count
+    const rangeSales = rangeAgg._sum.total ?? 0
+    const rangeTransactions = rangeAgg._count
+    const prevSales = prevAgg._sum.total ?? 0
+    const salesChange = prevSales > 0 ? ((rangeSales - prevSales) / prevSales) * 100 : null
 
     return ok({
-      todaySales,
-      todayTransactions,
-      avgSale: todayTransactions > 0 ? todaySales / todayTransactions : 0,
-      weekSales: weekAgg._sum.total ?? 0,
+      rangeDays,
+      rangeSales,
+      rangeTransactions,
+      avgSale: rangeTransactions > 0 ? rangeSales / rangeTransactions : 0,
+      salesChange,
       lowStockCount: lowStockItems.filter((i) => i.stock > 0 && i.stock <= i.product.minStock).length,
       outOfStockCount,
-      todayExpenses: todayExpenses._sum.amount ?? 0,
-      todayPurchases: todayPurchases._sum.total ?? 0,
+      rangeExpenses: rangeExpenses._sum.amount ?? 0,
+      rangePurchases: rangePurchases._sum.total ?? 0,
       salesSeries,
       paymentBreakdown,
       topProducts,

@@ -157,14 +157,15 @@ export interface PurchaseDto {
 }
 
 export interface DashboardData {
-  todaySales: number
-  todayTransactions: number
+  rangeDays: number
+  rangeSales: number
+  rangeTransactions: number
   avgSale: number
-  weekSales: number
+  salesChange: number | null
   lowStockCount: number
   outOfStockCount: number
-  todayExpenses: number
-  todayPurchases: number
+  rangeExpenses: number
+  rangePurchases: number
   salesSeries: { date: string; label: string; total: number; count: number }[]
   paymentBreakdown: { method: string; total: number; count: number }[]
   topProducts: { name: string; quantity: number; revenue: number }[]

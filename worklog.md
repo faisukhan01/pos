@@ -338,3 +338,22 @@ Work Log:
 Stage Summary:
 - Round delivered 3 power-user features (palette, collapse, report exports) + visual polish; all browser-verified with zero page errors, lint clean, on GitHub.
 - Next-round ideas: Urdu localization, PDF/Z-report print improvements, low-stock alerts in palette, sidebar per-section dividers in collapsed mode, dashboard quick-range chips (Today/7d/30d).
+
+---
+Task ID: cron-round-2026-09-20-3 (QA + features)
+Agent: Z.ai Code (recurring webDevReview)
+Task: QA sweep of all views, then this round's work: dashboard quick-range chips (Today/7d/30d) with hourly series, header stock-alert bell, inventory filter-total fix, mobile KPI polish.
+
+Work Log:
+- QA sweep (agent-browser, JS clicks + pointer events): all 13 views render with ZERO page errors; app HTTP 200; dev.log clean; cashier & owner roles behave correctly.
+- NEW dashboard range system: /api/dashboard now accepts `days` (1/7/30, clamped 1-90). days=1 builds an HOURLY sales series (12 AM..current hour, future hours dropped, thinner bars, x-labels every 3h); 7/30 build daily series. KPIs are range-based: Sales (with % delta vs the previous equal-length period, teal when up / destructive when down), Average sale, Transactions, Stock alerts (static). Expenses + Purchases bottom cards are range-based too.
+- Dashboard view: segmented range control (Today / 7 days / 30 days, active = bg-background + shadow-sm, role=tablist), range persisted in localStorage 'pos-dashboard-range'; chart/pie/top-product titles adapt ("Sales — today, by hour" etc.); payment donut now has a centered TOTAL readout (absolute overlay in the donut hole, innerRadius 58%); top-product & recent-sale rows get hover ring (border-primary/30 + bg-primary/[0.03]); out-of-stock rows in "Needs restocking" get destructive tint, low rows amber hover tint.
+- NEW src/components/layout/notifications-bell.tsx: header bell (permission-gated on INVENTORY_VIEW — hidden for Cashier, verified 403 on the API). Polls /api/inventory?filter=low + filter=out every 60s (initial fetch deferred via setTimeout to satisfy react-hooks/set-state-in-effect) and refreshes on open. Amber badge with count, destructive + animate-pulse when anything is out; dropdown lists up to 8 items (out first) with icon tiles + "below minimum of N unit" captions, "+ N more" note, empty state = teal check "All stocked up", footer button "Open inventory →" navigates and closes.
+- FIXED /api/inventory low/out filters: previously rows were paginated BEFORE the JS post-filter so `total` and pages were wrong; now post-filter fetches up to 2000 rows, filters, then paginates in JS and returns the FILTERED total (verified: Low tab header now shows "6 units · Rs 16,800" instead of the unfiltered 1,095). Also removed a duplicate `productId` key in the row mapper.
+- Mobile polish: StatCard value text-[17px] sm:text-xl, icon h-9 w-9 sm:h-10 sm:w-10, padding p-3 sm:p-4 — "Rs 112,060" now fits at 390px (was "Rs 112…"). Sales KPI delta hint shortened to "N txns · +X% vs prev" to avoid desktop truncation.
+- bun run lint: clean. Browser-verified: all 3 ranges (hourly today chart, 7d, 30d full history), bell dropdown content + navigation, Low/Out filters, dark mode (charts + chips + donut center), mobile 390px. Zero page errors.
+
+Stage Summary:
+- Dashboard is now a proper range-aware command center; stock alerts are visible app-wide via the bell (not just on the dashboard); inventory filtered counts are honest.
+- All changes verified in browser (light + dark + mobile), lint clean, zero page errors.
+- Next-round ideas: Urdu localization, PDF/Z-report print polish, click-through from bell rows to product adjust dialog, "restock now" quick action in bell footer, dashboard spend vs sales mini-trend.

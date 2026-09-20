@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { CommandPalette, type PaletteItem } from '@/components/layout/command-palette'
+import { NotificationsBell } from '@/components/layout/notifications-bell'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
@@ -410,6 +411,9 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
               {business && (
                 <p className="hidden xl:block text-[13px] text-muted-foreground">{business.name}</p>
               )}
+
+              {/* Stock alert bell */}
+              <NotificationsBell onNavigate={navigate} />
 
               {/* Branch selector */}
               {branches.length > 1 && !branchLocked && (

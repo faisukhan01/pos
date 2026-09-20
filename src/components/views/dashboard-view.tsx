@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ResponsiveContainer,
   BarChart,
@@ -43,25 +43,49 @@ import type { ViewKey } from '@/components/layout/app-shell'
 
 const PIE_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)']
 
+const RANGES = [
+  { days: 1, label: 'Today' },
+  { days: 7, label: '7 days' },
+  { days: 30, label: '30 days' },
+] as const
+
 export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const { user, activeBranchId, branches, settings } = useAuthStore()
   const branchId = activeBranchId ?? branches[0]?.id
   const symbol = settings?.currencySymbol ?? 'Rs'
-  const { data, loading, error } = useFetch<DashboardData>(branchId ? `/api/dashboard?branchId=${branchId}` : null)
+  const [days, setDays] = useState<number>(() => {
+    const saved = Number(localStorage.getItem('pos-dashboard-range'))
+    return RANGES.some((r) => r.days === saved) ? saved : 1
+  })
+  const { data, loading, error } = useFetch<DashboardData>(
+    branchId ? `/api/dashboard?branchId=${branchId}&days=${days}` : null
+  )
   const canSeeDrawer = !!user && hasPermission(user.role, PERMISSIONS.SHIFTS_VIEW)
   const { data: shiftData } = useFetch<ShiftsSummary>(
     canSeeDrawer && branchId ? `/api/shifts?branchId=${branchId}` : null
   )
   const activeShift = shiftData?.active ?? null
 
-  const salesChart = useMemo(() => data?.salesSeries ?? [], [data])
+  useEffect(() => {
+    localStorage.setItem('pos-dashboard-range', String(days))
+  }, [days])
 
-  // KPI count-up — animates from 0 (or previous value) whenever data lands/refreshes.
-  const todaySalesNum = useCountUp(data?.todaySales ?? 0)
+  const rangeLabel = days === 1 ? 'today' : `last ${days} days`
+  const salesChart = useMemo(() => data?.salesSeries ?? [], [data])
+  const payTotal = useMemo(
+    () => (data?.paymentBreakdown ?? []).reduce((s, p) => s + p.total, 0),
+    [data]
+  )
+
+  // KPI count-up — animates from the previous value whenever data lands (incl. range switches).
+  const salesNum = useCountUp(data?.rangeSales ?? 0)
   const avgSaleNum = useCountUp(data?.avgSale ?? 0)
-  const weekSalesNum = useCountUp(data?.weekSales ?? 0)
+  const txnsNum = useCountUp(data?.rangeTransactions ?? 0)
   const stockAlertsNum = useCountUp((data?.lowStockCount ?? 0) + (data?.outOfStockCount ?? 0))
   const stockAlertsValue = (data?.lowStockCount ?? 0) + (data?.outOfStockCount ?? 0)
+
+  const changeStr =
+    data?.salesChange == null ? null : `${data.salesChange >= 0 ? '+' : ''}${Math.round(data.salesChange)}%`
 
   if (error) {
     return (
@@ -75,6 +99,31 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
 
   return (
     <div className="p-4 sm:p-6 space-y-5">
+      {/* Range switcher */}
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[13px] text-muted-foreground">
+          Showing <span className="font-medium text-foreground">{rangeLabel}</span>
+        </p>
+        <div className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5" role="tablist" aria-label="Date range">
+          {RANGES.map((r) => (
+            <button
+              key={r.days}
+              role="tab"
+              aria-selected={days === r.days}
+              onClick={() => setDays(r.days)}
+              className={cn(
+                'h-7 rounded-md px-2.5 text-[12.5px] font-medium transition-all focus-visible:outline-2 focus-visible:outline-ring sm:px-3',
+                days === r.days
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {loading && !data
@@ -83,22 +132,33 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
             <>
               <StatCard
                 icon={Banknote}
-                label="Sales today"
-                value={formatMoney(Math.round(todaySalesNum), symbol)}
-                hint={`${formatNumber(data?.todayTransactions ?? 0)} transactions`}
+                label={days === 1 ? 'Sales today' : `Sales — ${rangeLabel}`}
+                value={formatMoney(Math.round(salesNum), symbol)}
+                hint={
+                  changeStr ? (
+                    <>
+                      {formatNumber(data?.rangeTransactions ?? 0)} txns ·{' '}
+                      <span className={cn('font-medium', (data?.salesChange ?? 0) >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-destructive')}>
+                        {changeStr} vs prev
+                      </span>
+                    </>
+                  ) : (
+                    `${formatNumber(data?.rangeTransactions ?? 0)} transactions`
+                  )
+                }
                 tone="primary"
               />
               <StatCard
-                icon={ReceiptText}
+                icon={TrendingUp}
                 label="Average sale"
                 value={formatMoney(avgSaleNum, symbol)}
-                hint="per transaction today"
+                hint="per transaction"
               />
               <StatCard
-                icon={TrendingUp}
-                label="Last 7 days"
-                value={formatMoney(Math.round(weekSalesNum), symbol)}
-                hint="gross sales"
+                icon={ReceiptText}
+                label="Transactions"
+                value={formatNumber(Math.round(txnsNum))}
+                hint={days === 1 ? 'bills rung up today' : `bills rung up · ${rangeLabel}`}
               />
               <StatCard
                 icon={(data?.outOfStockCount ?? 0) > 0 ? PackageX : Package}
@@ -184,7 +244,9 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
         {/* Sales trend */}
         <Card className="xl:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[15px] tracking-tight">Sales — last 14 days</CardTitle>
+            <CardTitle className="text-[15px] tracking-tight">
+              Sales — {days === 1 ? 'today, by hour' : rangeLabel}
+            </CardTitle>
           </CardHeader>
           <CardContent className="h-[260px]">
             {loading && !data ? (
@@ -193,7 +255,13 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={salesChart} margin={{ top: 6, right: 6, bottom: 0, left: -14 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={days === 1 ? 2 : 'preserveStartEnd'}
+                  />
                   <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
                   <ChartTooltip
                     formatter={(value: number, _name: string, entry: { payload?: { count?: number } }) => [
@@ -202,7 +270,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
                     ]}
                     contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 12.5 }}
                   />
-                  <Bar dataKey="total" fill="var(--chart-1)" radius={[5, 5, 0, 0]} maxBarSize={34} />
+                  <Bar dataKey="total" fill="var(--chart-1)" radius={[5, 5, 0, 0]} maxBarSize={days === 1 ? 22 : 34} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -212,36 +280,45 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
         {/* Payment mix */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-[15px] tracking-tight">Payments — last 7 days</CardTitle>
+            <CardTitle className="text-[15px] tracking-tight">Payments — {rangeLabel}</CardTitle>
           </CardHeader>
           <CardContent className="h-[260px]">
             {loading && !data ? (
               <Skeleton className="h-full w-full rounded-xl" />
             ) : (data?.paymentBreakdown?.length ?? 0) === 0 ? (
-              <p className="flex h-full items-center justify-center text-sm text-muted-foreground">No sales yet this week.</p>
+              <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                No sales {rangeLabel} yet.
+              </p>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data?.paymentBreakdown.map((p) => ({ ...p, label: paymentLabel(p.method) }))}
-                    dataKey="total"
-                    nameKey="label"
-                    innerRadius="52%"
-                    outerRadius="80%"
-                    paddingAngle={3}
-                    strokeWidth={0}
-                  >
-                    {data?.paymentBreakdown.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip
-                    formatter={(value: number) => formatMoney(value, symbol)}
-                    contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 12.5 }}
-                  />
-                  <Legend iconType="circle" iconSize={8} formatter={(v: string) => <span style={{ fontSize: 12 }}>{v}</span>} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="relative h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={data?.paymentBreakdown.map((p) => ({ ...p, label: paymentLabel(p.method) }))}
+                      dataKey="total"
+                      nameKey="label"
+                      innerRadius="58%"
+                      outerRadius="82%"
+                      paddingAngle={3}
+                      strokeWidth={0}
+                    >
+                      {data?.paymentBreakdown.map((_, i) => (
+                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip
+                      formatter={(value: number) => formatMoney(value, symbol)}
+                      contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 12.5 }}
+                    />
+                    <Legend iconType="circle" iconSize={8} formatter={(v: string) => <span style={{ fontSize: 12 }}>{v}</span>} />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center total — sits inside the donut hole */}
+                <div className="pointer-events-none absolute inset-x-0 top-[38%] flex flex-col items-center">
+                  <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Total</p>
+                  <p className="font-price text-lg font-semibold tracking-tight">{formatMoney(Math.round(payTotal), symbol)}</p>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -251,17 +328,17 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
         {/* Top products */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-[15px] tracking-tight">Top products — 7 days</CardTitle>
+            <CardTitle className="text-[15px] tracking-tight">Top products — {rangeLabel}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading && !data ? (
               <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-9 rounded-lg" />)}</div>
             ) : (data?.topProducts?.length ?? 0) === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">No sales recorded yet this week.</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">No sales recorded {rangeLabel} yet.</p>
             ) : (
               <ol className="space-y-2">
                 {data?.topProducts.map((p, i) => (
-                  <li key={p.name} className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2">
+                  <li key={p.name} className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2 transition-colors hover:border-primary/30 hover:bg-primary/[0.03]">
                     <span className={cn(
                       'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
                       i === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
@@ -296,7 +373,15 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
             ) : (
               <ul className="space-y-2">
                 {data?.lowStock.slice(0, 6).map((p) => (
-                  <li key={p.id} className="flex items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2">
+                  <li
+                    key={p.id}
+                    className={cn(
+                      'flex items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2 transition-colors',
+                      p.stock <= 0
+                        ? 'border-destructive/25 bg-destructive/[0.04] hover:bg-destructive/[0.07]'
+                        : 'hover:border-amber-300/60 hover:bg-amber-500/[0.04] dark:hover:border-amber-300/30'
+                    )}
+                  >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{p.name}</p>
                       <p className="text-[11px] text-muted-foreground">{p.barcode ?? '—'}</p>
@@ -327,7 +412,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
             ) : (
               <ul className="space-y-2">
                 {data?.recentSales.map((s) => (
-                  <li key={s.id} className="flex items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2">
+                  <li key={s.id} className="flex items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2 transition-colors hover:border-primary/30 hover:bg-primary/[0.03]">
                     <div className="min-w-0">
                       <p className="text-sm font-medium">
                         {s.invoiceNo}
@@ -355,9 +440,9 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
               <TrendingUp className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Purchases today (stock coming in)</p>
-              <p className="font-price text-lg font-semibold">{formatMoney(data?.todayPurchases ?? 0, symbol)}</p>
+            <div className="min-w-0">
+              <p className="truncate text-xs text-muted-foreground">Purchases {rangeLabel} (stock coming in)</p>
+              <p className="font-price text-lg font-semibold">{formatMoney(data?.rangePurchases ?? 0, symbol)}</p>
             </div>
           </CardContent>
         </Card>
@@ -366,9 +451,9 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
               <Wallet className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Expenses today (money going out)</p>
-              <p className="font-price text-lg font-semibold">{formatMoney(data?.todayExpenses ?? 0, symbol)}</p>
+            <div className="min-w-0">
+              <p className="truncate text-xs text-muted-foreground">Expenses {rangeLabel} (money going out)</p>
+              <p className="font-price text-lg font-semibold">{formatMoney(data?.rangeExpenses ?? 0, symbol)}</p>
             </div>
           </CardContent>
         </Card>
@@ -388,26 +473,26 @@ function StatCard({
   icon: React.ComponentType<{ className?: string }>
   label: string
   value: string
-  hint: string
+  hint: React.ReactNode
   tone?: 'default' | 'primary' | 'warn'
   action?: { label: string; onClick: () => void }
 }) {
   return (
     <Card className="card-lift">
-      <CardContent className="flex items-start gap-3 p-4">
+      <CardContent className="flex items-start gap-2.5 p-3 sm:gap-3 sm:p-4">
         <div
           className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10',
             tone === 'primary' && 'bg-primary/10 text-primary',
             tone === 'warn' && 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
             tone === 'default' && 'bg-muted text-muted-foreground'
           )}
         >
-          <Icon className="h-5 w-5" />
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
-          <p className="font-price truncate text-xl font-semibold tracking-tight">{value}</p>
+          <p className="font-price truncate text-[17px] font-semibold tracking-tight sm:text-xl">{value}</p>
           <p className="truncate text-[11px] text-muted-foreground">{hint}</p>
         </div>
         {action && (

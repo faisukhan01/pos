@@ -26,7 +26,7 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useAuthStore } from '@/lib/store'
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { formatMoney, formatDateTime } from '@/lib/format'
-import { paymentLabel, type SaleDto } from '@/lib/types'
+import { paymentLabel, paymentBadgeClass, type SaleDto } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface SalesResponse {
@@ -207,7 +207,9 @@ export function SalesView() {
                           </TableCell>
                           <TableCell className="hidden text-sm md:table-cell">{s.customerName}</TableCell>
                           <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">{s.cashierName}</TableCell>
-                          <TableCell className="hidden text-sm sm:table-cell">{paymentLabel(s.paymentMethod)}</TableCell>
+                          <TableCell className="hidden text-sm sm:table-cell">
+                            <Badge variant="outline" className={paymentBadgeClass(s.paymentMethod)}>{paymentLabel(s.paymentMethod)}</Badge>
+                          </TableCell>
                           <TableCell className="text-right text-sm">{s.itemCount}</TableCell>
                           <TableCell className="text-right font-price font-semibold">{formatMoney(s.total, symbol)}</TableCell>
                           <TableCell className="text-right">
@@ -245,7 +247,8 @@ export function SalesView() {
                   </Badge>
                 </DialogTitle>
                 <DialogDescription id="sale-detail-desc">
-                  {formatDateTime(detail.createdAt)} · {detail.branch?.name ?? 'Store'} · {paymentLabel(detail.paymentMethod)}
+                  {formatDateTime(detail.createdAt)} · {detail.branch?.name ?? 'Store'} ·{' '}
+                  <Badge variant="outline" className={paymentBadgeClass(detail.paymentMethod)}>{paymentLabel(detail.paymentMethod)}</Badge>
                 </DialogDescription>
               </DialogHeader>
 

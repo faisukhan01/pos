@@ -2,15 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, ScanBarcode, PackageSearch, PauseCircle, Keyboard, Vault } from 'lucide-react'
+import { Search, ScanBarcode, PackageSearch, PauseCircle, Keyboard, Vault, CloudOff, RefreshCw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { api } from '@/lib/client-api'
+import { api, HttpError } from '@/lib/client-api'
 import { useFetch } from '@/hooks/use-fetch'
-import { useAuthStore, useCartStore, useHeldStore } from '@/lib/store'
+import { useOnline } from '@/hooks/use-online'
+import { useAuthStore, useCartStore, useHeldStore, useOfflineQueueStore, type QueuedSale } from '@/lib/store'
 import { formatMoney } from '@/lib/format'
 import { CartPanel } from '@/components/pos/cart-panel'
 import { ScannerDialog } from '@/components/pos/scanner-dialog'
@@ -36,6 +37,12 @@ interface LookupResponse {
 export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const { user, branches, activeBranchId, business, settings } = useAuthStore()
   const cart = useCartStore()
+  const online = useOnline()
+  const queue = useOfflineQueueStore((s) => s.queue)
+  const syncing = useOfflineQueueStore((s) => s.syncing)
+  const enqueue = useOfflineQueueStore((s) => s.enqueue)
+  const dequeue = useOfflineQueueStore((s) => s.dequeue)
+  const setSyncing = useOfflineQueueStore((s) => s.setSyncing)
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   const [categoryId, setCategoryId] = useState<string | null>(null)
@@ -173,18 +180,24 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const paymentTotal = cartTotal
   const heldCount = useHeldStore((s) => s.held.length)
 
-  const completePayment = async (method: 'CASH' | 'CARD' | 'MOBILE', amountReceived: number) => {
+  const completePayment = async (
+    method: 'CASH' | 'CARD' | 'MOBILE' | 'CREDIT',
+    amountReceived: number
+  ) => {
     if (!branchId) return
     setCompleting(true)
+    const payload = {
+      branchId,
+      customerId: cart.customerId,
+      discount: cart.discount,
+      paymentMethod: method,
+      amountReceived,
+      lines: cart.lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+    }
     try {
       const res = await api.post<{ sale: SaleDto; duplicate: boolean }>('/api/sales', {
-        branchId,
-        customerId: cart.customerId,
-        discount: cart.discount,
-        paymentMethod: method,
-        amountReceived,
+        ...payload,
         clientRef: crypto.randomUUID(),
-        lines: cart.lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
       })
       setLastSale(res.sale)
       setPaymentOpen(false)
@@ -192,12 +205,89 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
       cart.clear()
       refetch()
       refetchShifts()
+      if (method === 'CREDIT') {
+        toast.success('Udhaar recorded', {
+          description: `${res.sale.customerName} — new balance in the credit book.`,
+        })
+      }
     } catch (err) {
-      toast.error('Sale could not be completed', { description: (err as Error).message })
+      const status = err instanceof HttpError ? err.status : undefined
+      const transient = status === undefined || status >= 500 || !navigator.onLine
+      if (transient) {
+        // Queue for background sync — the idempotent clientRef prevents double-selling.
+        const queued: QueuedSale = {
+          id: crypto.randomUUID(),
+          at: Date.now(),
+          itemCount: payload.lines.reduce((n, l) => n + l.quantity, 0),
+          clientTotal: paymentTotal,
+          payload,
+        }
+        enqueue(queued)
+        setPaymentOpen(false)
+        cart.clear()
+        toast.warning('Sale saved offline', {
+          description: 'The server could not be reached. It will sync automatically — do not re-ring this sale.',
+        })
+      } else {
+        toast.error('Sale could not be completed', { description: (err as Error).message })
+      }
     } finally {
       setCompleting(false)
     }
   }
+
+  // Background sync for the offline queue — sequential, idempotent by clientRef.
+  const syncQueue = useCallback(async () => {
+    const q = useOfflineQueueStore.getState().queue
+    if (q.length === 0 || useOfflineQueueStore.getState().syncing) return
+    setSyncing(true)
+    let synced = 0
+    let dropped = 0
+    try {
+      for (const item of q) {
+        try {
+          await api.post<{ sale: SaleDto; duplicate: boolean }>('/api/sales', {
+            ...item.payload,
+            clientRef: item.id,
+          })
+          dequeue(item.id)
+          synced++
+        } catch (err) {
+          const status = err instanceof HttpError ? err.status : undefined
+          if (status !== undefined && status < 500 && status !== 401) {
+            // Permanent business failure (stock gone, product removed…) — retrying
+            // will never succeed, so drop it and tell the user honestly.
+            dequeue(item.id)
+            dropped++
+            continue
+          }
+          throw err // transient — stop and retry later
+        }
+      }
+    } catch {
+      // still offline / server down — whatever synced stays synced
+    } finally {
+      setSyncing(false)
+      if (synced > 0) {
+        toast.success(`${synced} queued sale${synced === 1 ? '' : 's'} synced`)
+        refetch()
+        refetchShifts()
+      }
+      if (dropped > 0) {
+        toast.error(`${dropped} queued sale${dropped === 1 ? '' : 's'} could not be saved`, {
+          description: 'They were not charged — please re-ring them from the terminal.',
+        })
+      }
+    }
+  }, [dequeue, setSyncing, refetch, refetchShifts])
+
+  // Trigger sync when connectivity returns or queued sales appear.
+  useEffect(() => {
+    if (online && queue.length > 0 && !syncing) {
+      const t = setTimeout(() => void syncQueue(), 1200) // settle after reconnect
+      return () => clearTimeout(t)
+    }
+  }, [online, queue.length, syncing, syncQueue])
 
   const openAddProduct = (code: string) => {
     localStorage.setItem('pos-new-product-barcode', code)
@@ -245,8 +335,8 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
         </div>
 
         {/* Drawer status chip — taps through to the Cash Drawer view */}
-        {canSeeDrawer && (
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {canSeeDrawer && (
             <button
               onClick={() => onNavigate('shifts')}
               className={cn(
@@ -264,8 +354,38 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
                 <span>No drawer open — tap to start a shift</span>
               )}
             </button>
-          </div>
-        )}
+          )}
+
+          {/* Offline / queued-sales chip */}
+          {(!online || queue.length > 0) && (
+            <button
+              onClick={() => void syncQueue()}
+              disabled={syncing}
+              className={cn(
+                'flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11.5px] font-medium transition-colors',
+                !online
+                  ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                  : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900'
+              )}
+              aria-label={syncing ? 'Syncing queued sales' : 'Sync queued sales now'}
+            >
+              {syncing ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : !online ? (
+                <CloudOff className="h-3 w-3" />
+              ) : (
+                <RefreshCw className="h-3 w-3" />
+              )}
+              {!online ? (
+                <span>Offline — sales will queue{queue.length > 0 ? ` (${queue.length} waiting)` : ''}</span>
+              ) : syncing ? (
+                <span>Syncing {queue.length} queued sale{queue.length === 1 ? '' : 's'}…</span>
+              ) : (
+                <span className="font-price">{queue.length} sale{queue.length === 1 ? '' : 's'} queued — tap to sync</span>
+              )}
+            </button>
+          )}
+        </div>
 
         <div className="flex gap-1.5 overflow-x-auto scrollbar-thin pb-0.5" role="tablist" aria-label="Categories">
           <button
@@ -431,6 +551,8 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
         onOpenChange={setPaymentOpen}
         total={paymentTotal}
         currencySymbol={symbol}
+        customerId={cart.customerId}
+        customerName={cart.customerName}
         onComplete={completePayment}
       />
       <ReceiptDialog

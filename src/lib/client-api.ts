@@ -1,5 +1,15 @@
 // Small typed fetch wrapper for client components.
 // Always reads { error } responses and throws friendly Error objects.
+// Thrown errors carry `status` so callers can distinguish transient
+// (network / 5xx) failures from permanent (4xx) ones.
+
+export class HttpError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+  }
+}
 
 async function handle<T>(res: Response): Promise<T> {
   let body: unknown = null
@@ -16,7 +26,7 @@ async function handle<T>(res: Response): Promise<T> {
         : res.status >= 500
           ? 'Something went wrong on our side. Please try again.'
           : 'The request could not be completed.')
-    throw new Error(msg)
+    throw new HttpError(msg, res.status)
   }
   return body as T
 }

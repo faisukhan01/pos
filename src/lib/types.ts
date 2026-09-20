@@ -111,6 +111,19 @@ export interface CustomerDto {
   createdAt: string
   totalSpent?: number
   orders?: number
+  balance?: number // udhaar (credit) balance; > 0 means the customer owes the shop
+}
+
+export interface CreditEntryDto {
+  id: string
+  customerId: string
+  saleId: string | null
+  type: 'CHARGE' | 'PAYMENT' | 'ADJUST'
+  amount: number // signed
+  balanceAfter: number
+  note: string | null
+  createdByName: string
+  createdAt: string
 }
 
 export interface SupplierDto {
@@ -166,6 +179,7 @@ export interface ShiftAggregates {
   cashSales: number
   cardSales: number
   mobileSales: number
+  creditSales: number
   transactions: number
   grossSales: number
   discounts: number
@@ -200,6 +214,7 @@ export const PAYMENT_METHODS = [
   { value: 'CASH', label: 'Cash' },
   { value: 'CARD', label: 'Card' },
   { value: 'MOBILE', label: 'Mobile / QR' },
+  { value: 'CREDIT', label: 'Udhaar' },
 ] as const
 
 export const EXPENSE_CATEGORIES = [
@@ -208,4 +223,19 @@ export const EXPENSE_CATEGORIES = [
 
 export function paymentLabel(method: string) {
   return PAYMENT_METHODS.find((m) => m.value === method)?.label ?? method
+}
+
+export function paymentBadgeClass(method: string) {
+  switch (method) {
+    case 'CASH':
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+    case 'CARD':
+      return 'bg-violet-100 text-violet-800 dark:bg-violet-950/60 dark:text-violet-300'
+    case 'MOBILE':
+      return 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300'
+    case 'CREDIT':
+      return 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300'
+    default:
+      return 'bg-muted text-muted-foreground'
+  }
 }

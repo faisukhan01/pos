@@ -333,21 +333,23 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
             </div>
           </header>
 
-          {/* View content */}
+          {/* View content — keyed wrapper gives every view a soft entrance */}
           <main className="flex-1">
-            {view === 'dashboard' && <DashboardView onNavigate={navigate} />}
-            {view === 'pos' && <PosView onNavigate={navigate} />}
-            {view === 'shifts' && <ShiftsView />}
-            {view === 'products' && <ProductsView />}
-            {view === 'inventory' && <InventoryView />}
-            {view === 'sales' && <SalesView />}
-            {view === 'purchases' && <PurchasesView />}
-            {view === 'customers' && <CustomersView />}
-            {view === 'suppliers' && <SuppliersView />}
-            {view === 'expenses' && <ExpensesView />}
-            {view === 'reports' && <ReportsView />}
-            {view === 'staff' && <StaffView />}
-            {view === 'settings' && <SettingsView />}
+            <div key={view} className="view-enter h-full">
+              {view === 'dashboard' && <DashboardView onNavigate={navigate} />}
+              {view === 'pos' && <PosView onNavigate={navigate} />}
+              {view === 'shifts' && <ShiftsView />}
+              {view === 'products' && <ProductsView />}
+              {view === 'inventory' && <InventoryView />}
+              {view === 'sales' && <SalesView />}
+              {view === 'purchases' && <PurchasesView />}
+              {view === 'customers' && <CustomersView />}
+              {view === 'suppliers' && <SuppliersView />}
+              {view === 'expenses' && <ExpensesView />}
+              {view === 'reports' && <ReportsView />}
+              {view === 'staff' && <StaffView />}
+              {view === 'settings' && <SettingsView />}
+            </div>
           </main>
 
           {/* Sticky footer — sits at the bottom even on short views */}

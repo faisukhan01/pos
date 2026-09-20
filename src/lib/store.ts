@@ -115,6 +115,44 @@ export function cartTotals(lines: CartLine[], discount: number) {
   return { subtotal, tax, discount: cappedDiscount, total, itemCount: lines.reduce((s, l) => s + l.quantity, 0) }
 }
 
+// ---------------- Offline sale queue ----------------
+
+export interface QueuedSale {
+  id: string // doubles as the clientRef idempotency key
+  at: number
+  itemCount: number
+  clientTotal: number // display only — the server re-prices on sync
+  payload: {
+    branchId: string | null
+    customerId: string | null
+    discount: number
+    paymentMethod: 'CASH' | 'CARD' | 'MOBILE' | 'CREDIT'
+    amountReceived: number
+    lines: { productId: string; quantity: number }[]
+  }
+}
+
+interface OfflineQueueState {
+  queue: QueuedSale[]
+  syncing: boolean
+  enqueue: (sale: QueuedSale) => void
+  dequeue: (id: string) => void
+  setSyncing: (v: boolean) => void
+}
+
+export const useOfflineQueueStore = create<OfflineQueueState>()(
+  persist(
+    (set, get) => ({
+      queue: [],
+      syncing: false,
+      enqueue: (sale) => set({ queue: [...get().queue, sale].slice(-50) }),
+      dequeue: (id) => set({ queue: get().queue.filter((s) => s.id !== id) }),
+      setSyncing: (v) => set({ syncing: v }),
+    }),
+    { name: 'pos-offline-queue' }
+  )
+)
+
 // ---------------- Held (parked) sales ----------------
 
 export interface HeldSale {

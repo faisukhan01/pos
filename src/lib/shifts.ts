@@ -34,6 +34,7 @@ export async function computeShiftAggregates(
   const cashSales = byMethod.find((m) => m.paymentMethod === 'CASH')?._sum.total ?? 0
   const cardSales = byMethod.find((m) => m.paymentMethod === 'CARD')?._sum.total ?? 0
   const mobileSales = byMethod.find((m) => m.paymentMethod === 'MOBILE')?._sum.total ?? 0
+  const creditSales = byMethod.find((m) => m.paymentMethod === 'CREDIT')?._sum.total ?? 0
   const transactions = byMethod.reduce((s, m) => s + m._count._all, 0)
   const grossSales = byMethod.reduce((s, m) => s + (m._sum.total ?? 0), 0)
   const discounts = byMethod.reduce((s, m) => s + (m._sum.discount ?? 0), 0)
@@ -45,6 +46,7 @@ export async function computeShiftAggregates(
     cashSales,
     cardSales,
     mobileSales,
+    creditSales,
     transactions,
     grossSales,
     discounts,

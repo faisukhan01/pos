@@ -113,8 +113,23 @@ export function ReceiptDialog({
                 <div className="mt-1 flex justify-between border-t border-black pt-1 text-[14px] font-bold">
                   <span>TOTAL</span><span>{formatMoney(sale.total, currencySymbol)}</span>
                 </div>
-                <div className="flex justify-between"><span>Paid ({paymentLabel(sale.paymentMethod)})</span><span>{formatMoney(sale.amountReceived, currencySymbol)}</span></div>
-                <div className="flex justify-between"><span>Change</span><span>{formatMoney(sale.changeDue, currencySymbol)}</span></div>
+                {sale.paymentMethod === 'CREDIT' ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span>Cash paid now</span>
+                      <span>{formatMoney(sale.amountReceived, currencySymbol)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span>Udhaar (to pay later)</span>
+                      <span>{formatMoney(sale.total - sale.amountReceived, currencySymbol)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between"><span>Paid ({paymentLabel(sale.paymentMethod)})</span><span>{formatMoney(sale.amountReceived, currencySymbol)}</span></div>
+                    <div className="flex justify-between"><span>Change</span><span>{formatMoney(sale.changeDue, currencySymbol)}</span></div>
+                  </>
+                )}
               </div>
 
               <div className="my-3 border-t border-dashed border-black/60" />

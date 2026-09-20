@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, Boxes, AlertTriangle, PackageX, History, Loader2, PackageCheck } from 'lucide-react'
+import { Search, Boxes, AlertTriangle, PackageX, History, Loader2, PackageCheck, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -32,6 +32,7 @@ import { useAuthStore } from '@/lib/store'
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { formatMoney, formatDateTime, formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { StockTakeDialog } from '@/components/pos/stock-take-dialog'
 
 interface InventoryResponse {
   items: {
@@ -73,6 +74,7 @@ const MOVEMENT_LABELS: Record<string, string> = {
   RETURN: 'Customer return',
   ADJUSTMENT: 'Adjustment',
   TRANSFER: 'Transfer',
+  STOCK_TAKE: 'Stock take',
 }
 
 export function InventoryView() {
@@ -84,6 +86,7 @@ export function InventoryView() {
   const [page, setPage] = useState(1)
   const [adjusting, setAdjusting] = useState<InventoryResponse['items'][number] | null>(null)
   const [historyFor, setHistoryFor] = useState<{ productId: string; name: string } | null>(null)
+  const [stockTakeOpen, setStockTakeOpen] = useState(false)
   const [newStock, setNewStock] = useState('')
   const [adjustNote, setAdjustNote] = useState('')
   const [busy, setBusy] = useState(false)
@@ -101,7 +104,7 @@ export function InventoryView() {
   const { data, loading, refetch } = useFetch<InventoryResponse>(url)
 
   const movementsUrl = historyFor && branchId
-    ? `/api/reports?type=movements&productId=${historyFor.productId}&branchId=${branchId}`
+    ? `/api/reports/movements?productId=${historyFor.productId}&branchId=${branchId}`
     : null
   const { data: movements, loading: movementsLoading } = useFetch<MovementsResponse>(movementsUrl)
 
@@ -179,6 +182,11 @@ export function InventoryView() {
           <p className="hidden text-xs text-muted-foreground sm:block sm:ml-auto">
             Page totals: {formatNumber(totals.units)} units · {formatMoney(totals.value, symbol)} at cost
           </p>
+        )}
+        {canManage && (
+          <Button variant="outline" onClick={() => setStockTakeOpen(true)} className="sm:ml-auto lg:ml-0">
+            <ClipboardList className="h-4 w-4" /> Stock take
+          </Button>
         )}
       </div>
 
@@ -285,6 +293,14 @@ export function InventoryView() {
           )}
         </CardContent>
       </Card>
+
+      {/* Stock take dialog */}
+      <StockTakeDialog
+        open={stockTakeOpen}
+        onOpenChange={setStockTakeOpen}
+        branchId={branchId ?? null}
+        onSubmitted={refetch}
+      />
 
       {/* Adjust dialog */}
       <Dialog open={!!adjusting} onOpenChange={(o) => !o && setAdjusting(null)}>

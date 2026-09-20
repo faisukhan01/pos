@@ -2,13 +2,14 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, Plus, Pencil, Trash2, Loader2, Users, Phone, MapPin } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Loader2, Users, Phone, MapPin, BookOpenText, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { CreditBookDialog } from '@/components/pos/credit-book-dialog'
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ import { api } from '@/lib/client-api'
 import { useFetch } from '@/hooks/use-fetch'
 import { useAuthStore } from '@/lib/store'
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import { cn } from '@/lib/utils'
 import { formatMoney, formatDate } from '@/lib/format'
 import type { CustomerDto } from '@/lib/types'
 
@@ -42,6 +44,7 @@ export function CustomersView() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<CustomerDto | null>(null)
   const [deleting, setDeleting] = useState<CustomerDto | null>(null)
+  const [khataOpen, setKhataOpen] = useState<CustomerDto | null>(null)
   const [busy, setBusy] = useState(false)
 
   const canManage = !!user && hasPermission(user.role, PERMISSIONS.CUSTOMERS_MANAGE)
@@ -52,7 +55,7 @@ export function CustomersView() {
     return `/api/customers?${sp.toString()}`
   }, [debounced])
 
-  const { data, loading, refetch } = useFetch<{ items: CustomerDto[]; total: number }>(url)
+  const { data, loading, refetch } = useFetch<{ items: CustomerDto[]; total: number; receivables?: number }>(url)
 
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', note: '' })
 
@@ -123,6 +126,31 @@ export function CustomersView() {
         )}
       </div>
 
+      {/* Receivables strip */}
+      {data && (
+        <div
+          className={cn(
+            'flex items-center gap-4 rounded-2xl border px-5 py-4',
+            (data.receivables ?? 0) > 0
+              ? 'border-amber-300/70 bg-gradient-to-r from-amber-50 to-transparent dark:border-amber-900 dark:from-amber-950/40'
+              : 'border-border bg-card'
+          )}
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+            <Wallet className="h-5.5 w-5.5" />
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total udhaar out (receivables)</p>
+            <p className="font-price text-2xl font-bold tabular-nums tracking-tight">
+              {formatMoney(data.receivables ?? 0, symbol)}
+            </p>
+          </div>
+          <p className="ml-auto hidden max-w-[240px] text-xs leading-relaxed text-muted-foreground md:block">
+            Money customers still owe from Udhaar (credit) sales — collect it from the book icons below.
+          </p>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           {loading && !data ? (
@@ -150,7 +178,8 @@ export function CustomersView() {
                     <TableHead className="hidden lg:table-cell">Address</TableHead>
                     <TableHead className="text-right">Orders</TableHead>
                     <TableHead className="text-right">Total spent</TableHead>
-                    {canManage && <TableHead className="w-24 text-right">Actions</TableHead>}
+                    <TableHead className="text-right">Udhaar</TableHead>
+                    <TableHead className="w-28 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -177,18 +206,38 @@ export function CustomersView() {
                       </TableCell>
                       <TableCell className="text-right text-sm">{c.orders ?? 0}</TableCell>
                       <TableCell className="text-right font-price font-semibold">{formatMoney(c.totalSpent ?? 0, symbol)}</TableCell>
-                      {canManage && (
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)} aria-label={`Edit ${c.name}`}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setDeleting(c)} aria-label={`Remove ${c.name}`}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      )}
+                      <TableCell className="text-right">
+                        {(c.balance ?? 0) > 0 ? (
+                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 font-price text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                            {formatMoney(c.balance ?? 0, symbol)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Clear</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setKhataOpen(c)}
+                            aria-label={`Open udhaar book for ${c.name}`}
+                          >
+                            <BookOpenText className="h-3.5 w-3.5" />
+                          </Button>
+                          {canManage && (
+                            <>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)} aria-label={`Edit ${c.name}`}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setDeleting(c)} aria-label={`Remove ${c.name}`}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -197,6 +246,16 @@ export function CustomersView() {
           )}
         </CardContent>
       </Card>
+
+      {/* Udhaar (credit) book dialog */}
+      <CreditBookDialog
+        open={!!khataOpen}
+        onOpenChange={(o) => { if (!o) setKhataOpen(null) }}
+        customer={khataOpen ? { id: khataOpen.id, name: khataOpen.name, phone: khataOpen.phone } : null}
+        currencySymbol={symbol}
+        canManage={canManage}
+        onLedgerChanged={refetch}
+      />
 
       {/* Form dialog */}
       <Dialog open={formOpen} onOpenChange={(o) => !busy && setFormOpen(o)}>

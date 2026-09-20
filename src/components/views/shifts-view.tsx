@@ -12,6 +12,7 @@ import {
   Printer,
   Loader2,
   History,
+  BookOpenText,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -118,11 +119,12 @@ export function ShiftsView() {
               </div>
             </div>
           </div>
-          <CardContent className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6">
+          <CardContent className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-7">
             <MiniStat label="Opening float" value={formatMoney(active.openingFloat, symbol)} />
             <MiniStat label="Cash sales" value={formatMoney(active.aggregates?.cashSales ?? 0, symbol)} tone="pos" />
             <MiniStat label="Card" value={formatMoney(active.aggregates?.cardSales ?? 0, symbol)} icon={CreditCard} />
             <MiniStat label="Mobile / QR" value={formatMoney(active.aggregates?.mobileSales ?? 0, symbol)} icon={Smartphone} />
+            <MiniStat label="Udhaar (credit)" value={formatMoney(active.aggregates?.creditSales ?? 0, symbol)} icon={BookOpenText} />
             <MiniStat label="Transactions" value={String(active.aggregates?.transactions ?? 0)} />
             <MiniStat
               label="Cash out (expenses)"

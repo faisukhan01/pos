@@ -14,7 +14,7 @@ const saleSchema = z.object({
   branchId: z.string().optional().nullable(),
   customerId: z.string().optional().nullable(),
   discount: z.coerce.number().min(0).default(0),
-  paymentMethod: z.enum(['CASH', 'CARD', 'MOBILE']).default('CASH'),
+  paymentMethod: z.enum(['CASH', 'CARD', 'MOBILE', 'CREDIT']).default('CASH'),
   amountReceived: z.coerce.number().min(0).default(0),
   note: z.string().trim().max(300).optional().nullable(),
   clientRef: z.string().trim().max(80).optional().nullable(),
@@ -140,6 +140,15 @@ export async function POST(req: NextRequest) {
         throw new ApiError(422, 'Amount received is less than the total due.')
       }
       changeDue = amountReceived - total
+    } else if (method === 'CREDIT') {
+      if (!customerId) {
+        throw new ApiError(422, 'Select a saved customer before selling on udhaar (credit).')
+      }
+      // amountReceived for a credit sale = the cash part paid right now (0..total).
+      if (amountReceived < 0 || amountReceived > total) {
+        throw new ApiError(422, 'Cash paid now must be between zero and the sale total.')
+      }
+      amountReceived = Math.round(amountReceived * 100) / 100
     } else {
       amountReceived = total
     }
@@ -215,6 +224,30 @@ export async function POST(req: NextRequest) {
       }
       return created
     })
+
+    // Credit sale → ledger the udhaar charge (outside the stock transaction, but
+    // atomic on its own; the sale id is immutable at this point).
+    const creditCharged = method === 'CREDIT' ? Math.round((total - amountReceived) * 100) / 100 : 0
+    if (creditCharged > 0 && customerId) {
+      await db.$transaction(async (tx) => {
+        const current = await tx.creditEntry.aggregate({
+          where: { customerId },
+          _sum: { amount: true },
+        })
+        await tx.creditEntry.create({
+          data: {
+            customerId,
+            saleId: sale.id,
+            branchId,
+            type: 'CHARGE',
+            amount: creditCharged,
+            balanceAfter: Math.round(((current._sum.amount ?? 0) + creditCharged) * 100) / 100,
+            note: `Udhaar on invoice ${sale.invoiceNo}`,
+            createdByName: user.name,
+          },
+        })
+      })
+    }
 
     const full = await db.sale.findUnique({ where: { id: sale.id }, include: { items: true } })
     return ok({ sale: full, duplicate: false }, 201)

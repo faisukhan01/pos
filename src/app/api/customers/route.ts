@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const page = parseIntParam(sp.get('page'), 1)
     const pageSize = Math.min(parseIntParam(sp.get('pageSize'), 20), 100)
     const where = q ? { OR: [{ name: { contains: q } }, { phone: { contains: q } }] } : {}
-    const [total, customers] = await Promise.all([
+    const [total, customers, balances] = await Promise.all([
       db.customer.count({ where }),
       db.customer.findMany({
         where,
@@ -29,7 +29,9 @@ export async function GET(req: NextRequest) {
         take: pageSize,
         include: { sales: { select: { total: true } } },
       }),
+      db.creditEntry.groupBy({ by: ['customerId'], _sum: { amount: true } }),
     ])
+    const balanceMap = new Map(balances.map((b) => [b.customerId, Math.round((b._sum.amount ?? 0) * 100) / 100]))
     return ok({
       items: customers.map((c) => ({
         id: c.id,
@@ -40,10 +42,14 @@ export async function GET(req: NextRequest) {
         createdAt: c.createdAt,
         orders: c.sales.length,
         totalSpent: c.sales.reduce((s, x) => s + x.total, 0),
+        balance: balanceMap.get(c.id) ?? 0,
       })),
       total,
       page,
       pageSize,
+      receivables: Math.round(
+        Array.from(balanceMap.values()).filter((v) => v > 0).reduce((s, v) => s + v, 0) * 100
+      ) / 100,
     })
   } catch (err) {
     return handleApiError(err)

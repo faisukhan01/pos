@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Plus, Upload, Pencil, Trash2, Search, PackageSearch, Download, Loader2 } from 'lucide-react'
+import { Plus, Upload, Pencil, Trash2, Search, PackageSearch, Download, Loader2, Tags } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -36,6 +36,7 @@ import { formatMoney } from '@/lib/format'
 import type { PosProduct } from '@/lib/types'
 import { ProductFormDialog } from '@/components/pos/product-form-dialog'
 import { ImportDialog } from '@/components/pos/import-dialog'
+import { LabelPrintDialog } from '@/components/pos/label-print-dialog'
 
 interface ProductsResponse {
   items: (PosProduct & { category?: { name: string; color: string } | null })[]
@@ -45,8 +46,9 @@ interface ProductsResponse {
 }
 
 export function ProductsView() {
-  const { user, activeBranchId, branches, settings } = useAuthStore()
+  const { user, business, activeBranchId, branches, settings } = useAuthStore()
   const symbol = settings?.currencySymbol ?? 'Rs'
+  const businessName = business?.name ?? 'Our Store'
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   const [categoryId, setCategoryId] = useState('all')
@@ -55,6 +57,8 @@ export function ProductsView() {
   const [editing, setEditing] = useState<PosProduct | null>(null)
   const [prefillBarcode, setPrefillBarcode] = useState<string | null>(null)
   const [importOpen, setImportOpen] = useState(false)
+  const [labelOpen, setLabelOpen] = useState(false)
+  const [labelPreselect, setLabelPreselect] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<PosProduct | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
 
@@ -147,6 +151,9 @@ export function ProductsView() {
         </Select>
         {canManage && (
           <div className="flex gap-2 sm:ml-auto">
+            <Button variant="outline" onClick={() => { setLabelPreselect(null); setLabelOpen(true) }}>
+              <Tags className="h-4 w-4" /> Labels
+            </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload className="h-4 w-4" /> Import CSV
             </Button>
@@ -242,6 +249,15 @@ export function ProductsView() {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                className="h-8 w-8"
+                                onClick={() => { setLabelPreselect(p.id); setLabelOpen(true) }}
+                                aria-label={`Print labels for ${p.name}`}
+                              >
+                                <Tags className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                 onClick={() => setDeleting(p)}
                                 aria-label={`Remove ${p.name}`}
@@ -284,6 +300,15 @@ export function ProductsView() {
         onOpenChange={setImportOpen}
         categories={categories?.map((c) => c.name) ?? []}
         onImported={() => refetch()}
+      />
+
+      <LabelPrintDialog
+        open={labelOpen}
+        onOpenChange={setLabelOpen}
+        products={data?.items ?? []}
+        preselectId={labelPreselect}
+        currencySymbol={symbol}
+        businessName={businessName}
       />
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, ScanBarcode, PackageSearch, PauseCircle } from 'lucide-react'
+import { Search, ScanBarcode, PackageSearch, PauseCircle, Keyboard, Vault } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer'
@@ -12,13 +12,15 @@ import { api } from '@/lib/client-api'
 import { useFetch } from '@/hooks/use-fetch'
 import { useAuthStore, useCartStore, useHeldStore } from '@/lib/store'
 import { formatMoney } from '@/lib/format'
-import type { PosProduct, SaleDto } from '@/lib/types'
 import { CartPanel } from '@/components/pos/cart-panel'
 import { ScannerDialog } from '@/components/pos/scanner-dialog'
 import { PaymentDialog } from '@/components/pos/payment-dialog'
 import { ReceiptDialog } from '@/components/pos/receipt-dialog'
 import { ProductNotFoundDialog } from '@/components/pos/product-not-found-dialog'
 import { HeldSalesDialog } from '@/components/pos/held-sales-dialog'
+import { ShortcutsDialog } from '@/components/pos/shortcuts-dialog'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
+import type { PosProduct, SaleDto, ShiftsSummary } from '@/lib/types'
 import type { ViewKey } from '@/components/layout/app-shell'
 
 interface ProductsResponse {
@@ -43,6 +45,7 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const [notFoundOpen, setNotFoundOpen] = useState(false)
   const [notFoundCode, setNotFoundCode] = useState<string | null>(null)
   const [heldOpen, setHeldOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [lastSale, setLastSale] = useState<SaleDto | null>(null)
   const [completing, setCompleting] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -50,6 +53,11 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
 
   const branchId = activeBranchId ?? branches[0]?.id ?? null
   const symbol = settings?.currencySymbol ?? 'Rs'
+  const canSeeDrawer = !!user && hasPermission(user.role, PERMISSIONS.SHIFTS_VIEW)
+  const { data: shiftData, refetch: refetchShifts } = useFetch<ShiftsSummary>(
+    canSeeDrawer && branchId ? `/api/shifts?branchId=${branchId}` : null
+  )
+  const activeShift = shiftData?.active ?? null
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query.trim()), 280)
@@ -141,12 +149,16 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
     // fall through: debounced search already handles text
   }
 
-  // "/" focuses search — keyboard-friendly counter operation
+  // "/" focuses search — keyboard-friendly counter operation. "?" opens shortcut help.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === '/' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.key === '/') {
         e.preventDefault()
         searchRef.current?.focus()
+      } else if (e.key === '?') {
+        e.preventDefault()
+        setShortcutsOpen(true)
       }
     }
     window.addEventListener('keydown', handler)
@@ -179,6 +191,7 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
       setReceiptOpen(true)
       cart.clear()
       refetch()
+      refetchShifts()
     } catch (err) {
       toast.error('Sale could not be completed', { description: (err as Error).message })
     } finally {
@@ -226,7 +239,33 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
             <ScanBarcode className="h-4.5 w-4.5" />
             <span className="hidden sm:inline">Scan</span>
           </Button>
+          <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setShortcutsOpen(true)} aria-label="Keyboard shortcuts (press ?)">
+            <Keyboard className="h-4.5 w-4.5" />
+          </Button>
         </div>
+
+        {/* Drawer status chip — taps through to the Cash Drawer view */}
+        {canSeeDrawer && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onNavigate('shifts')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11.5px] font-medium transition-colors',
+                activeShift
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900'
+                  : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900'
+              )}
+              aria-label="Open cash drawer view"
+            >
+              <Vault className="h-3 w-3" />
+              {activeShift ? (
+                <span className="font-price">Drawer open · {formatMoney(activeShift.aggregates?.cashExpected ?? 0, symbol)} expected</span>
+              ) : (
+                <span>No drawer open — tap to start a shift</span>
+              )}
+            </button>
+          </div>
+        )}
 
         <div className="flex gap-1.5 overflow-x-auto scrollbar-thin pb-0.5" role="tablist" aria-label="Categories">
           <button
@@ -379,7 +418,8 @@ export function PosView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
 
       {/* Dialogs */}
       <HeldSalesDialog open={heldOpen} onOpenChange={setHeldOpen} currencySymbol={symbol} />
-      <ScannerDialog open={scannerOpen} onOpenChange={setScannerOpen} onDecoded={handleCode} />
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <ScannerDialog open={scannerOpen} onOpenChange={setScannerOpen} onDecoded={(code) => void handleCode(code)} />
       <ProductNotFoundDialog
         open={notFoundOpen}
         onOpenChange={setNotFoundOpen}

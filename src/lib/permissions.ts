@@ -19,6 +19,8 @@ export const PERMISSIONS = {
   EXPENSES_VIEW: 'expenses.view',
   EXPENSES_MANAGE: 'expenses.manage',
   REPORTS_VIEW: 'reports.view',
+  SHIFTS_VIEW: 'shifts.view',
+  SHIFTS_MANAGE: 'shifts.manage',
   SETTINGS_MANAGE: 'settings.manage',
   USERS_MANAGE: 'users.manage',
 } as const
@@ -41,6 +43,8 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.SALES_RETURN,
     PERMISSIONS.CUSTOMERS_VIEW,
     PERMISSIONS.CUSTOMERS_MANAGE,
+    PERMISSIONS.SHIFTS_VIEW,
+    PERMISSIONS.SHIFTS_MANAGE,
   ],
   INVENTORY_STAFF: [
     PERMISSIONS.DASHBOARD_VIEW,
@@ -63,6 +67,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.PRODUCTS_VIEW,
     PERMISSIONS.CUSTOMERS_VIEW,
     PERMISSIONS.SUPPLIERS_VIEW,
+    PERMISSIONS.SHIFTS_VIEW,
   ],
 }
 

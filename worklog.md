@@ -100,3 +100,36 @@ Unresolved / risks / next priorities:
 - Physical opening float / shift model for exact cash reconciliation.
 - Offline sale queue (idempotency keys ready).
 - Branch creation UI exists via API only — could add a small dialog in Settings.
+
+---
+Task ID: 3
+Agent: Z.ai Code (recurring webDevReview — round 3)
+Task: Assess status, QA via agent-browser, fix bugs, add features (cash drawer shifts, barcode labels, branches UI, POS shortcuts), styling polish, push to GitHub.
+
+Work Log (status assessment first):
+- Server healthy (200), lint clean at round start; browser QA of login/dashboard showed no page errors → phase stable, so chose feature expansion per open priorities from Task 2 worklog.
+
+Bugs found & fixed during QA:
+1. `businessName is not defined` in ProductsView crashed the whole app on navigation (client exception, caught via window error trap after agent-browser click test). Fixed by deriving from `business?.name`.
+2. Shift cash-expected math omitted the opening float (showed 9,970 instead of 12,970). `computeShiftAggregates` now takes openingFloat and adds it; verified 3,000 float + 9,970 cash sales = 12,970 live, then 14,050 after a Rs 1,080 sale.
+3. Duplicate type imports + missing `phone` on Branch DTO (tsc check); malformed aria-label on POS keyboard button.
+4. Replaced setState-in-effect seeding in LabelPrintDialog with the React-recommended render-phase state adjustment pattern (lint rule react-hooks/set-state-in-effect).
+
+New features built this round:
+1. Cash Drawer Shifts (opening float + X/Z reconciliation) — closes the "no float tracking" gap from Task 2:
+   - Prisma `Shift` model (float, status, counted/expected/variance, opened/closed by/at, note) + db push.
+   - APIs: GET/POST /api/shifts (active shift with LIVE aggregates: cash/card/mobile sales, transactions, discounts, returns, cash expenses; one open shift per branch), POST /api/shifts/close (count & close, snapshot expected, compute variance). Server-enforced SHIFTS_VIEW / SHIFTS_MANAGE permissions; cashier granted manage, accountant view-only, inventory staff none (403 verified).
+   - New "Cash Drawer" view (Counter section): gradient active-drawer card with live cash-expected (30s auto-refresh), 6 mini-stats, X-report dialog (receipt-style, 80mm print), Open-drawer dialog (float quick-chips 1k/3k/5k/10k + note), Count-&-close dialog (live variance preview with colour coding: Perfect/Over/Short → close receipt with CASH EXPECTED/COUNTED/VARIANCE), closed-shifts history table with variance badges.
+   - Dashboard: clickable drawer status strip (open → "cash expected Rs X · count & close", closed → "open drawer") + quick action button.
+   - POS: live drawer chip in toolbar (emerald "Drawer open · Rs X expected" / amber "No drawer open") that navigates to the drawer view; chip refreshes after every sale.
+2. Barcode label printing (Products): jsbarcode (Code128) label sheet dialog — pick products + quantities (max 400), 3 label sizes (50×30 / 40×30 / 38×25 mm), scaled live A4 sheet preview, print with cut lines via new `.label-print` print CSS; per-row Tags action preselects that product. Verified 35-bar Code128 SVGs render at exact mm sizing, 72 labels → 2 A4 pages.
+3. Branch management in Settings (replaces static Workspace counts): branch list with main-badge/address/phone, Add-branch dialog (name/code/phone/address) → POST /api/branches; new branches sync into the header branch selector immediately (store setBranches). Verified: created "Gulshan Outlet (GLS)" via UI.
+4. POS keyboard shortcuts help: `?` key and toolbar button open a shortcuts dialog (/, Enter-as-scan, ?, Esc, Ctrl+P). `/` focus re-verified.
+
+Verification:
+- bun run lint clean; full shift lifecycle browser-verified as owner AND cashier (open → sale → chip update 12,970→14,050 → X-report → close over-by-50 → close receipt → history row +Rs 50 → even-count close "Perfect"); labels dialog verified with barcode SVGs; branch add verified; inventory-staff 403 on /api/shifts verified.
+- NOTE: dev server died once mid-round (restarted manually with nohup; watch for recurrence).
+
+Stage Summary:
+- Working full-stack POS now includes cash-drawer shift reconciliation (the biggest remaining spec gap), barcode label printing, branch creation UI, and shortcuts help.
+- Remaining roadmap: Urdu localization, offline sale queue, branch-level expenses (drawer math currently uses business-wide cash expenses — stated in UI), shift-per-cashier model (currently one drawer per branch).

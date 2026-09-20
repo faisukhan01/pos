@@ -170,7 +170,7 @@
 
 /* ---------- Receipt printing (80mm thermal + A4 friendly) ---------- */
 @media print {
-  body *:not(.receipt-print):not(.receipt-print *) {
+  body *:not(.receipt-print):not(.receipt-print *):not(.label-print):not(.label-print *) {
     visibility: hidden !important;
   }
   .receipt-print {
@@ -189,6 +189,22 @@
     padding: 4mm 3mm !important;
     font-size: 11.5px !important;
     color: #000 !important;
+  }
+  /* Barcode label sheets print on plain A4 with cut lines */
+  .label-print {
+    visibility: visible !important;
+    position: fixed !important;
+    inset: 0 auto auto 0;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+  .label-print .label-cell {
+    break-inside: avoid;
+    border: 0.4px dashed #999 !important;
   }
   @page {
     margin: 6mm;

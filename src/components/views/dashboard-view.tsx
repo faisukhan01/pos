@@ -25,6 +25,8 @@ import {
   ScanBarcode,
   Plus,
   ChartColumn,
+  Vault,
+  ArrowRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -34,16 +36,22 @@ import { cn } from '@/lib/utils'
 import { useFetch } from '@/hooks/use-fetch'
 import { useAuthStore } from '@/lib/store'
 import { formatMoney, formatTime, timeAgo, formatNumber } from '@/lib/format'
-import { paymentLabel, type DashboardData } from '@/lib/types'
+import { paymentLabel, type DashboardData, type ShiftsSummary } from '@/lib/types'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import type { ViewKey } from '@/components/layout/app-shell'
 
 const PIE_COLORS = ['#166b4e', '#c98a2b', '#4d8ba8', '#b06343', '#8a5a9e']
 
 export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
-  const { activeBranchId, branches, settings } = useAuthStore()
+  const { user, activeBranchId, branches, settings } = useAuthStore()
   const branchId = activeBranchId ?? branches[0]?.id
   const symbol = settings?.currencySymbol ?? 'Rs'
   const { data, loading, error } = useFetch<DashboardData>(branchId ? `/api/dashboard?branchId=${branchId}` : null)
+  const canSeeDrawer = !!user && hasPermission(user.role, PERMISSIONS.SHIFTS_VIEW)
+  const { data: shiftData } = useFetch<ShiftsSummary>(
+    canSeeDrawer && branchId ? `/api/shifts?branchId=${branchId}` : null
+  )
+  const activeShift = shiftData?.active ?? null
 
   const salesChart = useMemo(() => data?.salesSeries ?? [], [data])
 
@@ -100,6 +108,49 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
           )}
       </div>
 
+      {/* Cash drawer status strip */}
+      {canSeeDrawer && (
+        <button
+          onClick={() => onNavigate('shifts')}
+          className={cn(
+            'group flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors',
+            activeShift
+              ? 'border-primary/30 bg-primary/[0.06] hover:bg-primary/10'
+              : 'border-dashed bg-card hover:bg-accent/60'
+          )}
+        >
+          <span
+            className={cn(
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+              activeShift ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            )}
+          >
+            <Vault className="h-4.5 w-4.5" />
+          </span>
+          {activeShift ? (
+            <>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">Drawer open · cash expected {formatMoney(activeShift.aggregates?.cashExpected ?? 0, symbol)}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  Opened by {activeShift.openedByName} at {formatTime(activeShift.openedAt)} · {formatNumber(activeShift.aggregates?.transactions ?? 0)} transactions so far
+                </p>
+              </div>
+              <Badge variant="outline" className="hidden shrink-0 border-primary/40 text-primary sm:inline-flex">Count &amp; close →</Badge>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 sm:hidden" />
+            </>
+          ) : (
+            <>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">No drawer is open right now</p>
+                <p className="truncate text-xs text-muted-foreground">Open a shift with a starting float to track every rupee in the till.</p>
+              </div>
+              <Badge variant="outline" className="hidden shrink-0 border-amber-300 text-amber-700 dark:text-amber-300 sm:inline-flex">Open drawer →</Badge>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 sm:hidden" />
+            </>
+          )}
+        </button>
+      )}
+
       {/* Quick actions */}
       <div className="flex flex-wrap gap-2">
         <Button size="sm" className="gap-2" onClick={() => onNavigate('pos')}>
@@ -114,6 +165,11 @@ export function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void
         <Button size="sm" variant="outline" className="gap-2" onClick={() => onNavigate('reports')}>
           <ChartColumn className="h-4 w-4" /> Reports
         </Button>
+        {canSeeDrawer && (
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => onNavigate('shifts')}>
+            <Vault className="h-4 w-4" /> Cash drawer
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">

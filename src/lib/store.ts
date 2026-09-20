@@ -19,6 +19,7 @@ interface AuthState {
     settings: Settings | null
   }) => void
   setActiveBranch: (id: string) => void
+  setBranches: (branches: { id: string; name: string; isMain: boolean }[]) => void
   updateSettings: (s: Settings) => void
   clear: () => void
 }
@@ -41,6 +42,7 @@ export const useAuthStore = create<AuthState>()(
             user.branchId ?? st.activeBranchId ?? branches.find((b) => b.isMain)?.id ?? branches[0]?.id ?? null,
         })),
       setActiveBranch: (id) => set({ activeBranchId: id }),
+      setBranches: (branches) => set({ branches }),
       updateSettings: (s) => set({ settings: s }),
       clear: () => set({ user: null, business: null, branches: [], settings: null, activeBranchId: null }),
     }),

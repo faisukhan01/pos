@@ -21,6 +21,7 @@ import {
   Sun,
   ChevronsUpDown,
   MapPin,
+  Vault,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
@@ -51,10 +52,12 @@ import { ExpensesView } from '@/components/views/expenses-view'
 import { ReportsView } from '@/components/views/reports-view'
 import { StaffView } from '@/components/views/staff-view'
 import { SettingsView } from '@/components/views/settings-view'
+import { ShiftsView } from '@/components/views/shifts-view'
 
 export type ViewKey =
   | 'dashboard'
   | 'pos'
+  | 'shifts'
   | 'products'
   | 'inventory'
   | 'sales'
@@ -80,6 +83,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { key: 'pos', label: 'New Sale', icon: ScanBarcode, permission: PERMISSIONS.POS_SELL },
       { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: PERMISSIONS.DASHBOARD_VIEW },
       { key: 'sales', label: 'Sales & Returns', icon: ReceiptText, permission: PERMISSIONS.SALES_VIEW },
+      { key: 'shifts', label: 'Cash Drawer', icon: Vault, permission: PERMISSIONS.SHIFTS_VIEW },
     ],
   },
   {
@@ -111,6 +115,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
 const VIEW_TITLES: Record<ViewKey, { title: string; subtitle: string }> = {
   dashboard: { title: 'Dashboard', subtitle: 'How the store is doing today' },
   pos: { title: 'Point of Sale', subtitle: 'Scan, add to cart, take payment' },
+  shifts: { title: 'Cash Drawer', subtitle: 'Shifts, floats and cash reconciliation' },
   products: { title: 'Products', subtitle: 'Your catalog and pricing' },
   inventory: { title: 'Inventory', subtitle: 'Stock on hand and movements' },
   sales: { title: 'Sales & Returns', subtitle: 'Every invoice, searchable' },
@@ -332,6 +337,7 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
           <main className="flex-1">
             {view === 'dashboard' && <DashboardView onNavigate={navigate} />}
             {view === 'pos' && <PosView onNavigate={navigate} />}
+            {view === 'shifts' && <ShiftsView />}
             {view === 'products' && <ProductsView />}
             {view === 'inventory' && <InventoryView />}
             {view === 'sales' && <SalesView />}

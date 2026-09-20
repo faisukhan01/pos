@@ -15,6 +15,7 @@ export interface Branch {
   code: string | null
   isMain: boolean
   address: string | null
+  phone?: string | null
 }
 
 export interface Business {
@@ -156,6 +157,43 @@ export interface DashboardData {
   topProducts: { name: string; quantity: number; revenue: number }[]
   lowStock: { id: string; name: string; stock: number; minStock: number; unit: string; barcode: string | null }[]
   recentSales: { id: string; invoiceNo: string; customerName: string; total: number; paymentMethod: string; createdAt: string; cashierName: string; status: string }[]
+}
+
+// ---------------- Cash drawer shifts ----------------
+
+export interface ShiftAggregates {
+  from: string
+  cashSales: number
+  cardSales: number
+  mobileSales: number
+  transactions: number
+  grossSales: number
+  discounts: number
+  returnsTotal: number
+  cashExpenses: number
+  cashExpected: number
+}
+
+export interface ShiftDto {
+  id: string
+  branchId: string
+  branchName?: string | null
+  openedByName: string
+  closedByName: string | null
+  openingFloat: number
+  status: string
+  countedCash: number | null
+  cashExpected: number | null
+  variance: number | null
+  note: string | null
+  openedAt: string
+  closedAt: string | null
+  aggregates?: ShiftAggregates | null
+}
+
+export interface ShiftsSummary {
+  active: ShiftDto | null
+  history: ShiftDto[]
 }
 
 export const PAYMENT_METHODS = [

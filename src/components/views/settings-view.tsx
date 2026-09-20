@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Loader2, Save, Store, ReceiptText, MapPin, Users, Coins } from 'lucide-react'
+import { Loader2, Save, Store, ReceiptText, MapPin, Users, Coins, Plus, Building2, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,11 +10,20 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { api } from '@/lib/client-api'
 import { useFetch } from '@/hooks/use-fetch'
 import { useAuthStore } from '@/lib/store'
 import { hasPermission, PERMISSIONS, roleLabel } from '@/lib/permissions'
+import type { Branch } from '@/lib/types'
 
 interface SettingsResponse {
   business: { id: string; name: string; businessType: string; currency: string; phone: string | null; email: string | null; address: string | null }
@@ -31,8 +40,9 @@ interface SettingsResponse {
 }
 
 export function SettingsView() {
-  const { user, updateSettings } = useAuthStore()
+  const { user, updateSettings, setBranches: setStoreBranches } = useAuthStore()
   const { data, loading, refetch } = useFetch<SettingsResponse>('/api/settings')
+  const { data: branchList, refetch: refetchBranches } = useFetch<Branch[]>('/api/branches')
   const canManage = !!user && hasPermission(user.role, PERMISSIONS.SETTINGS_MANAGE)
 
   const [business, setBusiness] = useState({ name: '', phone: '', email: '', address: '', businessType: 'RETAIL' })
@@ -209,26 +219,21 @@ export function SettingsView() {
         </CardContent>
       </Card>
 
-      {/* Workspace summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[15px]">
-            <MapPin className="h-4 w-4 text-primary" /> Workspace
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border bg-background p-4">
-            <p className="text-xs text-muted-foreground">Branches</p>
-            <p className="font-price text-2xl font-bold">{data?.branchCount ?? 0}</p>
-          </div>
-          <div className="rounded-xl border bg-background p-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5" /> Active staff accounts
-            </p>
-            <p className="font-price text-2xl font-bold">{data?.userCount ?? 0}</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Branches */}
+      <BranchesCard
+        branches={branchList ?? []}
+        canManage={canManage}
+        onChanged={async () => {
+          try {
+            const fresh = await api.get<Branch[]>('/api/branches')
+            setStoreBranches(fresh.map((b) => ({ id: b.id, name: b.name, isMain: b.isMain })))
+          } catch {
+            // list refresh is best-effort; the dialog already surfaced errors
+          }
+          refetchBranches()
+          refetch()
+        }}
+      />
 
       {/* Your account */}
       {user && (
@@ -251,5 +256,154 @@ export function SettingsView() {
         </div>
       )}
     </div>
+  )
+}
+
+/* ---------------- Branches ---------------- */
+
+function BranchesCard({
+  branches,
+  canManage,
+  onChanged,
+}: {
+  branches: Branch[]
+  canManage: boolean
+  onChanged: () => void | Promise<void>
+}) {
+  const [addOpen, setAddOpen] = useState(false)
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0">
+        <div>
+          <CardTitle className="flex items-center gap-2 text-[15px]">
+            <Building2 className="h-4 w-4 text-primary" /> Branches
+          </CardTitle>
+          <CardDescription>Each branch keeps its own stock, sales and drawer shifts.</CardDescription>
+        </div>
+        {canManage && (
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" /> Add branch
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        {branches.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">No branches yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {branches.map((b) => (
+              <li key={b.id} className="flex items-center justify-between gap-3 rounded-xl border bg-background px-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <MapPin className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 text-sm font-medium">
+                      <span className="truncate">{b.name}</span>
+                      {b.isMain && (
+                        <Badge variant="outline" className="shrink-0 border-amber-300 text-[10px] text-amber-700 dark:text-amber-300">
+                          <Star className="mr-0.5 h-2.5 w-2.5" /> Main
+                        </Badge>
+                      )}
+                    </p>
+                    <p className="truncate text-[11px] text-muted-foreground">
+                      {[b.code, b.address, b.phone].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+
+      <AddBranchDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onAdded={() => void onChanged()}
+      />
+    </Card>
+  )
+}
+
+function AddBranchDialog({
+  open,
+  onOpenChange,
+  onAdded,
+}: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+  onAdded: () => void
+}) {
+  const [form, setForm] = useState({ name: '', code: '', phone: '', address: '' })
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (open) setForm({ name: '', code: '', phone: '', address: '' })
+  }, [open])
+
+  const submit = async () => {
+    if (form.name.trim().length < 2) {
+      toast.error('Give the branch a name — at least 2 characters.')
+      return
+    }
+    setBusy(true)
+    try {
+      await api.post('/api/branches', {
+        name: form.name.trim(),
+        code: form.code.trim() || null,
+        phone: form.phone.trim() || null,
+        address: form.address.trim() || null,
+      })
+      toast.success('Branch added', { description: `${form.name.trim()} can now keep its own stock and sales.` })
+      onOpenChange(false)
+      onAdded()
+    } catch (err) {
+      toast.error((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm" aria-describedby="add-branch-desc">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-primary" /> Add a branch
+          </DialogTitle>
+          <DialogDescription id="add-branch-desc">
+            New branches start with empty stock and sales — assign staff to them from Staff &amp; Roles.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="br-name">Branch name *</Label>
+            <Input id="br-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Gulshan Outlet" autoFocus />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="br-code">Short code</Label>
+              <Input id="br-code" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} placeholder="GLS" maxLength={10} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="br-phone">Phone</Label>
+              <Input id="br-phone" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} className="font-price" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="br-addr">Address</Label>
+            <Textarea id="br-addr" rows={2} value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
+          <Button onClick={submit} disabled={busy} className="gap-2">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add branch
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

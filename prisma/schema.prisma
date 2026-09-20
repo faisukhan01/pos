@@ -39,6 +39,7 @@ model Branch {
   sales          Sale[]
   purchases      Purchase[]
   users          User[]
+  shifts         Shift[]
 
   @@index([businessId])
 }
@@ -247,6 +248,28 @@ model Expense {
   createdAt     DateTime @default(now())
 
   @@index([date])
+}
+
+model Shift {
+  id             String    @id @default(cuid())
+  businessId     String
+  branchId       String
+  openedById     String
+  openedByName   String
+  openingFloat   Float     @default(0)
+  status         String    @default("OPEN") // OPEN | CLOSED
+  closedById     String?
+  closedByName   String?
+  countedCash    Float?
+  cashExpected   Float? // snapshot at close time
+  variance       Float? // countedCash - cashExpected
+  note           String?
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+  branch         Branch    @relation(fields: [branchId], references: [id])
+
+  @@index([branchId, status])
+  @@index([openedAt])
 }
 
 model Settings {

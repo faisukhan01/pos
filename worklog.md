@@ -133,3 +133,82 @@ Verification:
 Stage Summary:
 - Working full-stack POS now includes cash-drawer shift reconciliation (the biggest remaining spec gap), barcode label printing, branch creation UI, and shortcuts help.
 - Remaining roadmap: Urdu localization, offline sale queue, branch-level expenses (drawer math currently uses business-wide cash expenses — stated in UI), shift-per-cashier model (currently one drawer per branch).
+
+---
+Task ID: 4
+Agent: Z.ai Code (recurring webDevReview — round 4)
+Task: Assess status, browser QA, add Udhaar credit book + stock take + offline sale queue, styling polish, push to GitHub.
+
+Work Log (status assessment first):
+- Server healthy (200), lint clean, no page errors on login/dashboard/POS/cash-drawer sweep as Owner.
+- Auth cycle re-verified end-to-end (demo-button login, form login, sign out, cookie cleared). Several
+  apparent login/click failures during QA were traced to agent-browser stale refs / synthetic-event
+  quirks (Radix menus need pointerdown), NOT app bugs — confirmed by fresh-session retests.
+- Found & fixed 1 real bug: Inventory movement-history dialog called `/api/reports?type=movements`
+  (generic reports route → `{type:'unknown'}`) so the timeline ALWAYS rendered empty. Fixed to the
+  dedicated `/api/reports/movements?productId&branchId` endpoint; browser-verified full audit trail
+  (stock-take/adjustment/sale movements with running balance).
+- NOTE: dev server had to be restarted manually (Prisma client was stale after `db push` — the new
+  CreditEntry model was undefined at runtime until restart). Don't forget a server restart after
+  schema changes.
+
+New features built this round:
+1. Udhaar / Customer Credit Book (khata) — the classic Pakistani credit ledger, closes the biggest
+   market-fit gap:
+   - Prisma `CreditEntry` model (CHARGE + / PAYMENT − / ADJUST ±, balanceAfter snapshot, saleId link,
+     createdByName audit) + db push.
+   - Sales API accepts `paymentMethod: 'CREDIT'` (customer required; optional cash-now part
+     0..total; the remainder is ledgered as a CHARGE linked to the invoice).
+   - New `/api/customers/[id]/credit` GET (ledger + balance) / POST (payment, charge, adjust with
+     overpayment guard — friendly error suggests adjustment instead).
+   - Customers list API now returns per-customer `balance` + business-wide `receivables`.
+   - UI: receivables strip (amber gradient) on Customers view; "Udhaar" column with amber badges;
+     khata dialog (balance hero, Settle full, entry timeline with running balance + author, quick
+     amount chips, payment/charge/adjust segmented form); POS payment dialog Udhaar tab (customer
+     required, live balance fetch "Already owes Rs X", cash-now input, "Added to udhaar book" preview,
+     "Write in udhaar book" CTA); receipt shows "Cash paid now" + "Udhaar (to pay later)".
+   - Cash-drawer aggregates + X/Z report now track `creditSales` separately (credit never counted
+     as drawer cash); MiniStat added on Cash Drawer view.
+   - Verified: charge/payment/overpay-guard/adjust via API; accountant POST 403 (view-only), cashier
+     allowed by design (CUSTOMERS_MANAGE); UI settle-full cleared Kiran Bibi's book live and the
+     receivables strip updated Rs 2,280 → Rs 1,400; POS credit sale INV-000075 charged Rs 540 to
+     Ahmed Store (1,400 → 1,940) with receipt line + ledger entry.
+2. Stock take (physical count):
+   - `/api/inventory/stock-take` batch POST (transactional; every delta becomes an audited
+     STOCK_TAKE movement; stale `expected` hints are skipped with reason; INVENTORY_MANAGE enforced,
+     cashier 403 verified).
+   - Stock-take dialog in Inventory: searchable product rows, system vs counted inputs, diff badges,
+     "All match" shortcut, applied/skipped summary; movement label "Stock take" in timeline.
+   - Verified: 153 → 156 correction applied + logged; stale-hint row skipped ("stock changed
+     meanwhile (now 156)"); UI submit flow + toast verified in browser.
+3. Offline sale queue:
+   - `useOfflineQueueStore` (persisted, max 50) + `useOnline` hook (online/offline events + /api probe).
+   - POS completePayment: transient failures (network/5xx/offline) enqueue the sale (clientRef =
+     idempotency key), clear the cart and toast "Sale saved offline — do not re-ring this sale";
+     permanent 4xx failures still show friendly errors.
+   - Auto-sync effect on reconnect (1.2 s settle), sequential posts, per-sale clientRef dedupe;
+     permanent failures dropped with honest "not charged — re-ring" toast; manual sync chip in POS
+     toolbar (Offline red / "N queued — tap to sync" amber / "Syncing…" spinner).
+   - E2E verified with `agent-browser set offline`: sale queued offline → chip appeared → back
+     online → "1 queued sale synced" → INV-000076 on the server.
+4. Styling polish (mandatory): keyed `.view-enter` soft transition on every view switch; dialog
+   overlay blur; `paymentBadgeClass` colored badges (Cash emerald / Card violet / Mobile sky /
+   Udhaar amber) in Sales table + detail; prefers-reduced-motion respected; stock-take diff badges.
+
+Verification:
+- bun run lint clean after every feature; no server 500s in dev.log; browser E2E for khata dialog,
+  stock-take dialog, POS credit sale, offline queue cycle; permission matrix re-checked (accountant
+  403 on credit POST, cashier 403 on stock-take, cashier allowed on credit POST by design).
+- Pushed commit 2113b99 to github.com/faisukhan01/pos (main), authored faisukhan01
+  <faisukhan01@users.noreply.github.com> so the commit graph updates.
+
+Unresolved / risks / next priorities:
+- Urdu localization still open (biggest roadmap item).
+- Udhaar: no per-entry DELETE/void yet (wrong entries need an ADJUST to reverse); no credit-limit
+  per customer; no customer statements export.
+- Stock take: single-branch per session; no import-from-CSV counts or saved sessions.
+- Offline queue: only sales queue (not returns/expenses); device-local — syncs from the same device.
+- Seeded demo sales carry synthetic timestamps so the newest invoice can appear lower in the sales
+  list (cosmetic, seed-data artifact).
+- Dev server died once mid-round after prisma db push + pkill — remember to restart after schema
+  changes; check /home/z/my-project/dev.log if the app stops responding.

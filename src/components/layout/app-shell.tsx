@@ -22,6 +22,9 @@ import {
   MapPin,
   Vault,
   Zap,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
@@ -30,6 +33,8 @@ import { hasPermission, PERMISSIONS, roleLabel } from '@/lib/permissions'
 import { api } from '@/lib/client-api'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { CommandPalette, type PaletteItem } from '@/components/layout/command-palette'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
@@ -128,12 +133,46 @@ const VIEW_TITLES: Record<ViewKey, { title: string; subtitle: string }> = {
   settings: { title: 'Settings', subtitle: 'Business profile and preferences' },
 }
 
-function SidebarNav({ active, onNavigate, user }: { active: ViewKey; onNavigate: (v: ViewKey) => void; user: { role: string } }) {
+function SidebarNav({ active, onNavigate, user, collapsed = false }: { active: ViewKey; onNavigate: (v: ViewKey) => void; user: { role: string }; collapsed?: boolean }) {
   return (
-    <nav aria-label="Main navigation" className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 space-y-4">
+    <nav aria-label="Main navigation" className={cn('flex-1 overflow-y-auto scrollbar-thin py-3 space-y-4', collapsed ? 'px-2' : 'px-3')}>
       {NAV_SECTIONS.map((section) => {
         const items = section.items.filter((i) => hasPermission(user.role, i.permission))
         if (!items.length) return null
+        if (collapsed) {
+          return (
+            <div key={section.title}>
+              <ul className="space-y-1">
+                {items.map((item) => {
+                  const Icon = item.icon
+                  const isActive = active === item.key
+                  return (
+                    <li key={item.key} className="flex justify-center">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => onNavigate(item.key)}
+                            aria-current={isActive ? 'page' : undefined}
+                            aria-label={item.label}
+                            className={cn(
+                              'flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-ring',
+                              isActive
+                                ? 'bg-primary/10 text-primary dark:bg-primary/15'
+                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                            )}
+                          >
+                            <Icon className={cn('h-4 w-4', isActive ? 'text-primary' : 'opacity-70')} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" sideOffset={8}>{item.label}</TooltipContent>
+                      </Tooltip>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )
+        }
         return (
           <div key={section.title}>
             <p className="px-3 pb-1 text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground/60">
@@ -169,7 +208,16 @@ function SidebarNav({ active, onNavigate, user }: { active: ViewKey; onNavigate:
   )
 }
 
-function BrandMark() {
+function BrandMark({ collapsed = false }: { collapsed?: boolean }) {
+  if (collapsed) {
+    return (
+      <div className="flex justify-center px-2" title="Nova POS">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Zap className="h-4 w-4" strokeWidth={2.2} />
+        </span>
+      </div>
+    )
+  }
   return (
     <div className="flex items-center gap-2.5 px-2">
       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -193,10 +241,31 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
     return 'dashboard'
   })
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('pos-sidebar-collapsed') === '1')
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   useEffect(() => {
     localStorage.setItem('pos-last-view', view)
   }, [view])
+
+  useEffect(() => {
+    localStorage.setItem('pos-sidebar-collapsed', collapsed ? '1' : '0')
+  }, [collapsed])
+
+  // Global shortcuts: Ctrl/Cmd+K → command palette, Ctrl/Cmd+B → collapse sidebar
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen((o) => !o)
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault()
+        setCollapsed((c) => !c)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const canSee = (key: ViewKey) => {
     const item = NAV_SECTIONS.flatMap((s) => s.items).find((i) => i.key === key)
@@ -226,18 +295,22 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
   const activeBranch = branches.find((b) => b.id === activeBranchId)
 
   const userCard = (
-    <div className="border-t border-sidebar-border p-3">
+    <div className={cn('border-t border-sidebar-border p-3', collapsed && 'px-2')}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="flex w-full items-center gap-2.5 rounded-xl p-2 text-left transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[13px] font-semibold">
               {user.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
             </div>
-            <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate text-[13px] font-medium">{user.name}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{roleLabel(user.role)}</p>
-            </div>
-            <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            {!collapsed && (
+              <>
+                <div className="min-w-0 flex-1 leading-tight">
+                  <p className="truncate text-[13px] font-medium">{user.name}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">{roleLabel(user.role)}</p>
+                </div>
+                <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              </>
+            )}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" side="top" className="w-56">
@@ -258,15 +331,26 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
     </div>
   )
 
+  const paletteItems: PaletteItem[] = NAV_SECTIONS.flatMap((s) =>
+    s.items
+      .filter((i) => user && hasPermission(user.role, i.permission))
+      .map((i) => ({ key: i.key, label: i.label, section: s.title, icon: i.icon }))
+  )
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="flex flex-1">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:flex lg:w-56 xl:w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar sticky top-0 h-screen">
-          <div className="flex items-center justify-between px-4 pt-4 pb-1">
-            <BrandMark />
+        <aside
+          className={cn(
+            'hidden lg:flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar sticky top-0 h-screen transition-[width] duration-200 ease-out',
+            collapsed ? 'w-[64px]' : 'lg:w-56 xl:w-60'
+          )}
+        >
+          <div className={cn('flex items-center justify-between pt-4 pb-1', collapsed ? 'px-2' : 'px-4')}>
+            <BrandMark collapsed={collapsed} />
           </div>
-          <SidebarNav active={view} onNavigate={navigate} user={user} />
+          <SidebarNav active={view} onNavigate={navigate} user={user} collapsed={collapsed} />
           {userCard}
         </aside>
 
@@ -275,6 +359,17 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
           {/* Header */}
           <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/75">
             <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
+              {/* Desktop: sidebar collapse */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden lg:inline-flex text-muted-foreground hover:text-foreground"
+                onClick={() => setCollapsed((c) => !c)}
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {collapsed ? <PanelLeftOpen className="h-[18px] w-[18px]" /> : <PanelLeftClose className="h-[18px] w-[18px]" />}
+              </Button>
+
               {/* Mobile nav */}
               <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
                 <SheetTrigger asChild>
@@ -297,6 +392,20 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
                 <h1 className="truncate text-[15px] font-semibold tracking-tight">{meta.title}</h1>
                 <p className="hidden sm:block truncate text-xs text-muted-foreground">{meta.subtitle}</p>
               </div>
+
+              {/* Command palette trigger */}
+              <button
+                onClick={() => setPaletteOpen(true)}
+                aria-label="Open quick search (Ctrl+K)"
+                className="hidden sm:flex h-8 w-40 items-center gap-2 rounded-lg border border-input bg-muted/40 px-2.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring md:w-48"
+              >
+                <Search className="h-3.5 w-3.5 shrink-0" />
+                <span className="flex-1 text-left">Search…</span>
+                <kbd className="pointer-events-none rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">Ctrl K</kbd>
+              </button>
+              <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setPaletteOpen(true)} aria-label="Open quick search">
+                <Search className="h-[18px] w-[18px]" />
+              </Button>
 
               {business && (
                 <p className="hidden xl:block text-[13px] text-muted-foreground">{business.name}</p>
@@ -358,6 +467,16 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
           </footer>
         </div>
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        items={paletteItems}
+        onNavigate={navigate}
+        dark={theme === 'dark'}
+        onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        onSignOut={signOut}
+      />
     </div>
   )
 }

@@ -15,6 +15,8 @@ interface ShortcutRow {
 }
 
 const SHORTCUTS: ShortcutRow[] = [
+  { keys: ['Ctrl', 'K'], label: 'Quick search — jump to any page or action' },
+  { keys: ['Ctrl', 'B'], label: 'Collapse or expand the sidebar' },
   { keys: ['/'], label: 'Focus the search box — then scan or type' },
   { keys: ['Enter'], label: 'In search: treat input as a barcode and add it to the cart' },
   { keys: ['?'], label: 'Open this shortcuts help' },

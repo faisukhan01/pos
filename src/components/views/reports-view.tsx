@@ -16,6 +16,9 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
+import { Download } from 'lucide-react'
+import { toast } from 'sonner'
+import { downloadCsv, todayStamp } from '@/lib/csv'
 import { ZReportDialog } from '@/components/pos/z-report-dialog'
 import { ReceiptText } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -88,6 +91,34 @@ export function ReportsView() {
   const active = { sales, products, inventory, expenses, purchases }[tab]
   const loading = active.loading
 
+  const TAB_LABEL: Record<ReportTab, string> = {
+    sales: 'sales', products: 'products', inventory: 'inventory', expenses: 'expenses', purchases: 'purchases',
+  }
+
+  const handleExport = () => {
+    const stamp = todayStamp()
+    if (tab === 'sales' && sales.data) {
+      downloadCsv(`nova-sales-report_${stamp}.csv`, ['Date', 'Transactions', 'Total'],
+        sales.data.daily.map((d) => [d.label, d.count, d.total]))
+    } else if (tab === 'products' && products.data) {
+      downloadCsv(`nova-products-report_${stamp}.csv`, ['Product', 'Units sold', 'Revenue'],
+        products.data.byProduct.map((p) => [p.name, p.quantity, p.revenue]))
+    } else if (tab === 'inventory' && inventory.data) {
+      downloadCsv(`nova-inventory-report_${stamp}.csv`, ['Product', 'SKU', 'Category', 'Unit', 'On hand', 'Min stock', 'Low', 'Cost value', 'Retail value'],
+        inventory.data.rows.map((r) => [r.name, r.sku ?? '', r.category, r.unit, r.stock, r.minStock, r.low ? 'yes' : 'no', r.costValue, r.retailValue]))
+    } else if (tab === 'expenses' && expenses.data) {
+      downloadCsv(`nova-expenses-report_${stamp}.csv`, ['Date', 'Category', 'Description', 'Method', 'Amount'],
+        expenses.data.items.map((e) => [formatDate(e.date), e.category, e.description ?? '', e.paymentMethod, e.amount]))
+    } else if (tab === 'purchases' && purchases.data) {
+      downloadCsv(`nova-purchases-report_${stamp}.csv`, ['Reference', 'Supplier', 'Units', 'Total', 'Date'],
+        purchases.data.items.map((p) => [p.referenceNo, p.supplierName ?? '', p.itemCount, p.total, formatDateTime(p.createdAt)]))
+    } else {
+      toast('Nothing to export yet', { description: 'Wait for the report to finish loading.' })
+      return
+    }
+    toast('Report exported', { description: `${TAB_LABEL[tab][0].toUpperCase() + TAB_LABEL[tab].slice(1)} report saved as CSV.` })
+  }
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       {/* Controls */}
@@ -101,30 +132,38 @@ export function ReportsView() {
             <TabsTrigger value="purchases">Purchases</TabsTrigger>
           </TabsList>
         </Tabs>
-        {tab !== 'inventory' && (
-          <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+        {/* Right cluster: export + end-of-day + date range */}
+        <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+          <Button variant="outline" onClick={handleExport} disabled={loading} className="gap-2">
+            <Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span>
+          </Button>
+          {tab !== 'inventory' && (
             <Button variant="outline" onClick={() => setZOpen(true)} className="gap-2">
-              <ReceiptText className="h-4 w-4" /> End-of-day
+              <ReceiptText className="h-4 w-4" /> <span className="hidden sm:inline">End-of-day</span>
             </Button>
-            <input
-              type="date"
-              value={from}
-              max={to}
-              onChange={(e) => setFrom(e.target.value)}
-              aria-label="From date"
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-            <span className="text-xs text-muted-foreground">to</span>
-            <input
-              type="date"
-              value={to}
-              min={from}
-              onChange={(e) => setTo(e.target.value)}
-              aria-label="To date"
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-        )}
+          )}
+          {tab !== 'inventory' && (
+            <>
+              <input
+                type="date"
+                value={from}
+                max={to}
+                onChange={(e) => setFrom(e.target.value)}
+                aria-label="From date"
+                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <span className="text-xs text-muted-foreground">to</span>
+              <input
+                type="date"
+                value={to}
+                min={from}
+                onChange={(e) => setTo(e.target.value)}
+                aria-label="To date"
+                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </>
+          )}
+        </div>
       </div>
 
       {/* End-of-day printable summary */}
@@ -352,8 +391,17 @@ function SimpleList({ rows, empty }: { rows: { key: string; label: string; sub: 
   return (
     <ul className="space-y-1.5">
       {rows.map((r, i) => (
-        <li key={r.key} className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-muted-foreground">
+        <li key={r.key} className="group flex items-center gap-3 rounded-lg border bg-background px-3 py-2 transition-colors hover:border-primary/30 hover:bg-primary/[0.03]">
+          <span
+            className={cn(
+              'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
+              i === 0
+                ? 'bg-primary text-primary-foreground'
+                : i < 3
+                  ? 'bg-primary/15 text-primary'
+                  : 'bg-muted text-muted-foreground'
+            )}
+          >
             {i + 1}
           </span>
           <div className="min-w-0 flex-1">
